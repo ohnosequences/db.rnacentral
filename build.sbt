@@ -2,7 +2,7 @@ Nice.scalaProject
 
 name          := "18s-its-database"
 organization  := "era7bio"
-description   := "18s-its-database project"
+description   := "Code generation and bundle for a 18S RNA databases"
 
 bucketSuffix  := "era7.com"
 
