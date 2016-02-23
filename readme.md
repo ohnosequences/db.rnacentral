@@ -10,3 +10,5 @@ Reference databases for RNA data. Includes
 
 1. code generating BLAST databases from source FASTAs
 2. statika bundles for both making new database releases and using them
+
+The source data for *all* the BLAST databases here comes from [RNAcentral](http://rnacentral.org/).
