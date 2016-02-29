@@ -129,7 +129,6 @@ case object RNAcentralRelease extends Bundle() {
   }
 }
 
-
 case object generateBLASTdb {
 
   import ohnosequences.blast.api._

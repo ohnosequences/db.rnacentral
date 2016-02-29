@@ -17,3 +17,7 @@ case object csvUtils {
   def rows(file: File)(headers: Seq[String]): Iterator[Map[String,String]] =
     lines(file) map { line => (headers zip line) toMap }
 }
+
+import ohnosequences.cosas._, klists._
+
+case class HArray[T <: AnyKList](val rep: Array[Any]) extends AnyVal
