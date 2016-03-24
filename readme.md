@@ -8,7 +8,8 @@
 
 Reference databases for RNA data. Includes
 
-1. code generating BLAST databases from source FASTAs
-2. statika bundles for both making new database releases and using them
+0. filtering of only present IDs from the id to taxa mappings, dropping external IDs fields
+1. a BLAST database from source FASTA containing all sequences from RNACentral
+<!-- 2. statika bundles for both making new database releases and using them -->
 
 The source data for *all* the BLAST databases here comes from [RNAcentral](http://rnacentral.org/).
