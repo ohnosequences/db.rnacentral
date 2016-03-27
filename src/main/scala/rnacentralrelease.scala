@@ -83,7 +83,7 @@ case object MirrorRNAcentralRelease extends Bundle() {
     // get raw input stuff from EBI FTP
     getRnaCentralFastaFileGz -&- extractRnaCentralFastaFile -&-
     getRnaCentralIdMappingGz -&- extractRnaCentralIdMapping -&-
-    LazyTry {
+    LazyTry[String] {
     // drop inactive ids from the id2taxa file
     fileWrangling.filterInactiveIds(
       rnaCentralFastaFile = rnaCentralFastaFile,
@@ -114,6 +114,8 @@ case object MirrorRNAcentralRelease extends Bundle() {
       id2taxaactiveFile.toJava
     )
     .waitForCompletion
+
+    s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only id2taxa mapping"
   }
 }
 
