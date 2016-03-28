@@ -7,7 +7,7 @@ description   := "Code generation and bundle for a 18S RNA databases"
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "fastarious" % "0.5.1",
+  "ohnosequences" %% "fastarious" % "0.5.2",
   "ohnosequences" %% "blast-api"  % "0.5.1",
   "ohnosequences" %% "statika"    % "2.0.0-M5",
   "era7"          %% "defaults"   % "0.1.0",
