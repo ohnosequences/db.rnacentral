@@ -9,196 +9,167 @@ import com.amazonaws.services.s3.transfer._
 import era7.defaults._, loquats._
 
 /*
-  ### RNAcentral sequences
+  ## RNACentral data
 
-  We have RNA sequences mirrored at S3, scoped by version.
+  We mirror RNACentral data at S3. There are important differences across versions: for example, the fields in the taxid mappings are different.
 */
 abstract class AnyRNAcentral(val version: String) {
 
   lazy val prefix = S3Object("resources.ohnosequences.com","")/"rnacentral"/version/
 
   val fastaFileName           : String = s"rnacentral.${version}.fasta"
-  val id2taxafullFileName     : String = s"id2taxafull.${version}.tsv"
   val id2taxaFileName         : String = s"id2taxa.${version}.tsv"
-  val id2taxafilteredFileName : String = s"id2taxa.filtered.${version}.tsv"
+  val id2taxaactiveFileName   : String = s"id2taxa.active.${version}.tsv"
 
-  lazy val fasta            : S3Object = prefix/fastaFileName
-  lazy val id2taxafull      : S3Object = prefix/id2taxafullFileName
-  lazy val id2taxa          : S3Object = prefix/id2taxaFileName
-  lazy val id2taxafiltered  : S3Object = prefix/id2taxafilteredFileName
+  lazy val fasta          : S3Object = prefix/fastaFileName
+  lazy val id2taxa        : S3Object = prefix/id2taxaFileName
+  lazy val id2taxaactive  : S3Object = prefix/id2taxaactiveFileName
 }
 
-case object RNAcentral extends AnyRNAcentral("4.0") {
+case object RNACentral5 extends AnyRNAcentral("5.0") {
 
   case object id            extends Type[String]("id")
   case object db            extends Type[String]("db")
   case object external_id   extends Type[String]("external_id")
   case object tax_id        extends Type[String]("tax_id")
+  // TODO use http://www.insdc.org/rna_vocab.html
+  case object rna_type      extends Type[String]("rna_type")
+  case object gene_name     extends Type[String]("gene_name")
 
-  case object Id2TaxaFull extends RecordType(
+
+  case object Id2Taxa extends RecordType(
     id          :×:
     db          :×:
     external_id :×:
     tax_id      :×:
-    |[AnyType]
-  )
-
-  case object Id2Taxa extends RecordType(
-    id     :×:
-    tax_id :×:
+    rna_type    :×:
+    gene_name   :×:
     |[AnyType]
   )
 }
 
-case object RNAcentralRelease extends Bundle() {
+/*
+  ### Mirror RNACentral release files in S3
 
-  val rnaCentral: RNAcentral.type = RNAcentral
+  This bundle
+
+  1. downloads all RNACentral raw files from the EBI ftp
+  2. creates other id2taxa file containing only the *active* sequences (those actually found in RNACentral)
+  3. uploads everything to S3
+*/
+case object MirrorRNAcentralRelease extends Bundle() {
+
+  val rnaCentral: RNACentral5.type = RNACentral5
   lazy val dataFolder = file"/media/ephemeral0"
 
-  lazy val rnaCentralfastaFile  = dataFolder/rnaCentral.fastaFileName
-  lazy val id2taxafullFile      = dataFolder/rnaCentral.id2taxafullFileName
-  lazy val id2taxaFile          = dataFolder/rnaCentral.id2taxaFileName
-  lazy val id2taxafilteredFile  = dataFolder/rnaCentral.id2taxafilteredFileName
-  lazy val errLogFile           = dataFolder/s"${toString}.log"
+  lazy val rnaCentralFastaFile    = dataFolder/"rnacentral_active.fasta"
+  lazy val rnaCentralFastaFileGz  = dataFolder/"rnacentral_active.fasta.gz"
+  lazy val id2taxaFileGz          = dataFolder/"id_mapping.tsv.gz"
+  lazy val id2taxaFile            = dataFolder/"id_mapping.tsv"
+  lazy val id2taxaactiveFile      = dataFolder/rnaCentral.id2taxaactiveFileName
+  lazy val errLogFile             = dataFolder/s"${toString}.log"
 
+  lazy val getRnaCentralFastaFileGz = cmd("wget")(
+    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/sequences/rnacentral_active.fasta.gz"
+  )
+  lazy val extractRnaCentralFastaFile = cmd("gzip")("-d", rnaCentralFastaFileGz.name)
 
-  def instructions: AnyInstructions = LazyTry {
+  lazy val getRnaCentralIdMappingGz = cmd("wget")(
+    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/id_mapping/id_mapping.tsv.gz"
+  )
+  lazy val extractRnaCentralIdMapping = cmd("gzip")("-d", id2taxaFileGz.name)
+
+  def instructions: AnyInstructions =
+    // get raw input stuff from EBI FTP
+    getRnaCentralFastaFileGz -&- extractRnaCentralFastaFile -&-
+    getRnaCentralIdMappingGz -&- extractRnaCentralIdMapping -&-
+    LazyTry[String] {
+    // drop inactive ids from the id2taxa file
+    fileWrangling.filterInactiveIds(
+      rnaCentralFastaFile = rnaCentralFastaFile,
+      id2taxaFile         = id2taxaFile,
+      id2taxaactiveFile   = id2taxaactiveFile,
+      errLogFile          = errLogFile
+    )
 
     val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
 
-    // get the fasta file
-    transferManager.download(
-      rnaCentral.fasta.bucket, rnaCentral.fasta.key,
-      rnaCentralfastaFile.toJava
-    )
-    .waitForCompletion
-
-    // get the full id file
-    transferManager.download(
-      rnaCentral.id2taxafull.bucket, rnaCentral.id2taxafull.key,
-      id2taxafullFile.toJava
-    )
-    .waitForCompletion
-
-    // drop fields, write to another file
-    fileWrangling.dropSomeFields(id2taxafullFile, id2taxaFile)
-
-    fileWrangling.filterInactiveIds(
-      rnaCentralfastaFile,
-      id2taxaFile,
-      id2taxafilteredFile,
-      errLogFile
-    )
-
+    // upload the uncompressed fasta file
     transferManager.upload(
-      rnaCentral.id2taxafiltered.bucket, rnaCentral.id2taxafiltered.key,
-      id2taxafilteredFile.toJava
+      rnaCentral.fasta.bucket, rnaCentral.fasta.key,
+      rnaCentralFastaFile.toJava
     )
     .waitForCompletion
 
-    // generate BLAST db
-    generateBLASTdb.from(rnaCentralfastaFile)
-  }
-
-
-
-  case object compat extends Compatible(
-      amznAMIEnv(
-        AmazonLinuxAMI(Ireland, HVM, InstanceStore),
-        javaHeap = 20 // in G
-      ),
-      RNAcentralRelease,
-      generated.metadata.Rnacentraldb
+    // upload full id2taxa file
+    transferManager.upload(
+      rnaCentral.id2taxa.bucket, rnaCentral.id2taxa.key,
+      id2taxaFile.toJava
     )
+    .waitForCompletion
 
-  def runTask(user: AWSUser): List[String] = {
-    EC2.create(user.profile)
-      .runInstances(
-        amount = 1,
-        compat.instanceSpecs(
-          c3.x2large,
-          user.keypair.name,
-          Some(ec2Roles.projects.name)
-        )
-      ).map { inst =>
-
-        val id = inst.getInstanceId
-        println(s"Launched [${id}]")
-        id
-      }
-  }
-}
-
-case object generateBLASTdb {
-
-  import ohnosequences.blast.api._
-
-  def from(fastaFile: File): Unit = {
-
-    val mkdb = makeblastdb(
-      argumentValues =
-        in(fastaFile)                 ::
-        input_type(DBInputType.fasta) ::
-        dbtype(BlastDBType.nucl)      ::
-        *[AnyDenotation],
-      optionValues = makeblastdb.defaults.update(
-          title(fastaFile.name) :: *[AnyDenotation]
-        ).value
+    // upload active id2taxa file
+    transferManager.upload(
+      rnaCentral.id2taxaactive.bucket, rnaCentral.id2taxaactive.key,
+      id2taxaactiveFile.toJava
     )
+    .waitForCompletion
 
-    import sys.process._
-    mkdb.toSeq.!!
+    s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only id2taxa mapping"
   }
 }
 
 case object fileWrangling {
 
-  def dropSomeFields(id2taxafullFile: File, id2TaxaFile: File): Unit = {
+  import RNACentral5._
 
-    import RNAcentral._
+  /*
+    ### Filter inactive ids from the id2taxa file
 
-    // ugly I know. we need a csv lib
-    csvUtils.rows(id2taxafullFile)(Id2TaxaFull.keys.types map typeLabel asList).foreach {
-      row => Id2TaxaFull.parse(row) match {
-        case Right(v)   => id2TaxaFile << s"${v.getV(id)}\t${v.getV(tax_id)}"
-        case Left(err)  => println(err)
-      }
-    }
-  }
+    This method keeps from the id2taxa csv those present in the active RNACentral fasta. It will fail if at least **one** fasta id is not found in the id2taxa csv.
 
+    > **WARNING** This implementation reuses iterators, something about which the Scala std docs say: "Using the old iterator is undefined, subject to change, and may result in changes to the new iterator as well."
+    >
+    > I tried to do it in a different way but I couldn't. `iterator.span` is crap, as other iterator methods:
+    >
+    > - http://grokbase.com/t/gg/scala-user/12bknnwmbg/why-does-this-iterator-cause-a-stack-overflow#20121119kgsf2s3oryv5xbp2z62sa7cg4e
+    > - https://issues.scala-lang.org/browse/SI-9332
+    > - https://issues.scala-lang.org/browse/SI-5838
+    > - https://groups.google.com/forum/#!topic/scala-user/s3UutoCEckg
+  */
   def filterInactiveIds(
     rnaCentralFastaFile : File,
-    id2TaxaFile         : File,
-    id2TaxaFiltered     : File,
-    errLog              : File
-  ): Unit = {
+    id2taxaFile         : File,
+    id2taxaactiveFile   : File,
+    errLogFile          : File
+  )
+  : Unit = {
 
-    // val errLog = file"filterInactiveIds.log"
-    // val id2TaxaFiltered = file"id2taxa.filtered.tsv"
-    import ohnosequences.fastarious.fasta._
-    import RNAcentral._
+    import ohnosequences.fastarious._, fasta._
 
-    val fastas = parseFromLines(rnaCentralFastaFile.lines) map { map => FASTA.parse(map) }
-    val allIds = csvUtils.rows(id2TaxaFile)(Id2Taxa.keys.types map typeLabel asList).map {
-      row => Id2Taxa.parse(row) match { case Right(v) => v }
-    }
+    // here we drop any errors from the taxid mapping file
+    val allIds = csvUtils.rows(id2taxaFile)(Id2Taxa.keys.types map typeLabel asList)
+      .map(Id2Taxa.parse(_))
+      .collect({ case Right(rec) => rec })
 
-    fastas.foreach {
+    fasta.parseFastaDropErrors(rnaCentralFastaFile.lines).foreach(
 
-      case Left(err) => errLog << err.toString
-      case Right(fa) => {
-        // advance ids
-        val rest = allIds.dropWhile( _.getV(id) != fa.getV(header).id )
+      fa => {
 
-        if(rest.hasNext) {
+        val faId = fa.getV(header).id
+        // advance ids, get current
+        val rest   = allIds.dropWhile( _.getV(id) != faId )
 
-          val gotit = rest.next
-          id2TaxaFiltered << s"${gotit.getV(id)}\t${gotit.getV(tax_id)}"
+        if(allIds.hasNext) {
+          // we are just getting the first assignment here
+          val rec = rest.next
+          id2taxaactiveFile << s"${rec.getV(id)}\t${rec.getV(db)}\t${rec.getV(external_id)}\t${rec.getV(tax_id)}\t${rec.getV(rna_type)}\t${rec.getV(gene_name)}"
         }
         else {
-          errLog << s"${fa.getV(header)} not found in id2taxa file"
+
+          errLogFile << s"${fa.getV(header)} not found in ${id2taxaFile}. All subsequent will fail"
         }
       }
-    }
+    )
   }
 }

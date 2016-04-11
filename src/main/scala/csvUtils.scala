@@ -4,12 +4,21 @@ import better.files._
 
 case object csvUtils {
 
-  // TODO use tsv
   import com.github.tototoshi.csv._
 
-  val separator = "\t"
+  case object funnyTSV extends CSVFormat {
 
-  def csvReader(file: File): CSVReader = CSVReader.open(file.toJava)(new TSVFormat {})
+  val delimiter: Char = '\t'
+  val quoteChar: Char = '"'
+  // this tsv has '\' inside fields
+  val escapeChar: Char = '†'
+
+  val lineTerminator: String = "\n"
+  val quoting: Quoting = QUOTE_NONE
+  val treatEmptyLineAsNil: Boolean = false
+}
+
+  def csvReader(file: File): CSVReader = CSVReader.open(file.toJava)(funnyTSV)
 
   def lines(file: File): Iterator[Seq[String]] = csvReader(file) iterator
 
@@ -17,7 +26,3 @@ case object csvUtils {
   def rows(file: File)(headers: Seq[String]): Iterator[Map[String,String]] =
     lines(file) map { line => (headers zip line) toMap }
 }
-
-import ohnosequences.cosas._, klists._
-
-case class HArray[T <: AnyKList](val rep: Array[Any]) extends AnyVal
