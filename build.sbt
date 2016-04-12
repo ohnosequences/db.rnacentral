@@ -4,6 +4,8 @@ name          := "rnacentraldb"
 organization  := "era7bio"
 description   := "Code generation and bundle for a 18S RNA databases"
 
+scalaVersion := "2.11.8"
+
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
