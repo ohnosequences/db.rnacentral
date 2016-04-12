@@ -25,7 +25,7 @@ trait AnyBlastDB {
 
   val predicate: (Row, FASTA.Value) => Boolean
 
-  val rnaCentralRelease: AnyRNAcentral
+  val rnaCentralRelease: AnyRNACentral
   private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
   private[db] lazy val sourceTable: S3Object = rnaCentralRelease.id2taxaactive
 

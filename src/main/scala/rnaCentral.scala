@@ -6,14 +6,13 @@ import ohnosequences.statika._, aws._
 import better.files._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
-import era7.defaults._, loquats._
 
 /*
   ## RNACentral data
 
   We mirror RNACentral data at S3. There are important differences across versions: for example, the fields in the taxid mappings are different.
 */
-abstract class AnyRNAcentral(val version: String) {
+abstract class AnyRNACentral(val version: String) {
 
   lazy val prefix = S3Object("resources.ohnosequences.com","")/"rnacentral"/version/
 
@@ -26,7 +25,7 @@ abstract class AnyRNAcentral(val version: String) {
   lazy val id2taxaactive  : S3Object = prefix/id2taxaactiveFileName
 }
 
-case object RNACentral5 extends AnyRNAcentral("5.0") {
+case object RNACentral5 extends AnyRNACentral("5.0") {
 
   sealed trait Field extends AnyType {
     type Raw = String
@@ -62,9 +61,11 @@ case object RNACentral5 extends AnyRNAcentral("5.0") {
   2. creates other id2taxa file containing only the *active* sequences (those actually found in RNACentral)
   3. uploads everything to S3
 */
-case object MirrorRNAcentralRelease extends Bundle() {
+class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
-  val rnaCentral: RNACentral5.type = RNACentral5
+  type RNACentral = R
+  val rnaCentral: RNACentral = r
+
   lazy val dataFolder = file"/media/ephemeral0"
 
   lazy val rnaCentralFastaFile    = dataFolder/"rnacentral_active.fasta"
