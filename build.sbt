@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "blast-api"  % "0.7.0",
   "ohnosequences" %% "statika"    % "2.0.0-M5",
   "era7"          %% "defaults"   % "0.1.0",
+  "ohnosequences-bundles" %% "blast" % "0.3.0",
   "com.github.tototoshi" %% "scala-csv" % "1.2.2",
   "org.scalatest" %% "scalatest" % "2.2.5" % Test
 )

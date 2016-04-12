@@ -6,14 +6,14 @@ case object csvUtils {
 
   import com.github.tototoshi.csv._
 
-  case object funnyTSV extends TSVFormat {
+  case object tableFormat extends TSVFormat {
 
     override val lineTerminator = "\n"
     // NOTE: this tsv has '\' inside fields
     override val escapeChar = '†'
   }
 
-  def csvReader(file: File): CSVReader = CSVReader.open(file.toJava)(funnyTSV)
+  def csvReader(file: File): CSVReader = CSVReader.open(file.toJava)(tableFormat)
 
   def lines(file: File): Iterator[Seq[String]] = csvReader(file) iterator
 
@@ -33,5 +33,5 @@ case class RowOps(row: csvUtils.Row) extends AnyVal {
 
   def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
 
-  def apply(field: Field): String = this.toMap.apply(field)
+  def select(field: Field): String = this.toMap.apply(field)
 }
