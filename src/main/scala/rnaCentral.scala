@@ -6,14 +6,13 @@ import ohnosequences.statika._, aws._
 import better.files._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
-import era7.defaults._, loquats._
 
 /*
   ## RNACentral data
 
   We mirror RNACentral data at S3. There are important differences across versions: for example, the fields in the taxid mappings are different.
 */
-abstract class AnyRNAcentral(val version: String) {
+abstract class AnyRNACentral(val version: String) {
 
   lazy val prefix = S3Object("resources.ohnosequences.com","")/"rnacentral"/version/
 
@@ -26,15 +25,20 @@ abstract class AnyRNAcentral(val version: String) {
   lazy val id2taxaactive  : S3Object = prefix/id2taxaactiveFileName
 }
 
-case object RNACentral5 extends AnyRNAcentral("5.0") {
+case object RNACentral5 extends AnyRNACentral("5.0") {
 
-  case object id            extends Type[String]("id")
-  case object db            extends Type[String]("db")
-  case object external_id   extends Type[String]("external_id")
-  case object tax_id        extends Type[String]("tax_id")
+  sealed trait Field extends AnyType {
+    type Raw = String
+    lazy val label = toString
+  }
+
+  case object id          extends Field
+  case object db          extends Field
+  case object external_id extends Field
+  case object tax_id      extends Field
   // TODO use http://www.insdc.org/rna_vocab.html
-  case object rna_type      extends Type[String]("rna_type")
-  case object gene_name     extends Type[String]("gene_name")
+  case object rna_type    extends Field
+  case object gene_name   extends Field
 
 
   case object Id2Taxa extends RecordType(
@@ -44,7 +48,7 @@ case object RNACentral5 extends AnyRNAcentral("5.0") {
     tax_id      :×:
     rna_type    :×:
     gene_name   :×:
-    |[AnyType]
+    |[Field]
   )
 }
 
@@ -57,9 +61,11 @@ case object RNACentral5 extends AnyRNAcentral("5.0") {
   2. creates other id2taxa file containing only the *active* sequences (those actually found in RNACentral)
   3. uploads everything to S3
 */
-case object MirrorRNAcentralRelease extends Bundle() {
+class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
-  val rnaCentral: RNACentral5.type = RNACentral5
+  type RNACentral = R
+  val rnaCentral: RNACentral = r
+
   lazy val dataFolder = file"/media/ephemeral0"
 
   lazy val rnaCentralFastaFile    = dataFolder/"rnacentral_active.fasta"
@@ -173,3 +179,6 @@ case object fileWrangling {
     )
   }
 }
+
+// bundle:
+case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
