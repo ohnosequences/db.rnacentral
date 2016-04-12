@@ -6,7 +6,7 @@ import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autosc
 import era7bio.db.bundles._
 import era7.defaults._
 
-case object bundles {
+case object runBundles {
 
   // use `sbt test:console`:
   // > era7bio.db.test.bundles.runBundle(...)

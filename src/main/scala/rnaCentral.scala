@@ -179,3 +179,6 @@ case object fileWrangling {
     )
   }
 }
+
+// bundle:
+case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
