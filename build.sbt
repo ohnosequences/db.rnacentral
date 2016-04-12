@@ -25,19 +25,19 @@ testOptions in Test += Tests.Argument("-oD")
 parallelExecution in Test := false
 
 
-// // Uncomment this to publish fat-jar with bundles:
-// fatArtifactSettings
-//
-// enablePlugins(BuildInfoPlugin)
-// buildInfoPackage := "generated.metadata"
-// buildInfoObject  := name.value
-// buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
-// buildInfoKeys    := Seq[BuildInfoKey](
-//   organization,
-//   version,
-//   "artifact" -> name.value.toLowerCase,
-//   "artifactUrl" -> fatArtifactUrl.value
-// )
-//
-// // For including test code in the fat artifact:
-// unmanagedSourceDirectories in Compile += (scalaSource in Test).value / "compats.scala"
+// Uncomment this to publish fat-jar with bundles:
+fatArtifactSettings
+
+enablePlugins(BuildInfoPlugin)
+buildInfoPackage := "generated.metadata"
+buildInfoObject  := name.value
+buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
+buildInfoKeys    := Seq[BuildInfoKey](
+  organization,
+  version,
+  "artifact" -> name.value.toLowerCase,
+  "artifactUrl" -> fatArtifactUrl.value
+)
+
+// For including test code in the fat artifact:
+unmanagedSourceDirectories in Compile += (scalaSource in Test).value / "compats.scala"

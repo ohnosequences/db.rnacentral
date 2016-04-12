@@ -8,7 +8,6 @@ import ohnosequences.statika._, aws._
 import better.files._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
-import era7.defaults._, loquats._
 ```
 
 
@@ -18,7 +17,7 @@ We mirror RNACentral data at S3. There are important differences across versions
 
 
 ```scala
-abstract class AnyRNAcentral(val version: String) {
+abstract class AnyRNACentral(val version: String) {
 
   lazy val prefix = S3Object("resources.ohnosequences.com","")/"rnacentral"/version/
 
@@ -31,15 +30,20 @@ abstract class AnyRNAcentral(val version: String) {
   lazy val id2taxaactive  : S3Object = prefix/id2taxaactiveFileName
 }
 
-case object RNACentral5 extends AnyRNAcentral("5.0") {
+case object RNACentral5 extends AnyRNACentral("5.0") {
 
-  case object id            extends Type[String]("id")
-  case object db            extends Type[String]("db")
-  case object external_id   extends Type[String]("external_id")
-  case object tax_id        extends Type[String]("tax_id")
+  sealed trait Field extends AnyType {
+    type Raw = String
+    lazy val label = toString
+  }
+
+  case object id          extends Field
+  case object db          extends Field
+  case object external_id extends Field
+  case object tax_id      extends Field
   // TODO use http://www.insdc.org/rna_vocab.html
-  case object rna_type      extends Type[String]("rna_type")
-  case object gene_name     extends Type[String]("gene_name")
+  case object rna_type    extends Field
+  case object gene_name   extends Field
 
 
   case object Id2Taxa extends RecordType(
@@ -49,7 +53,7 @@ case object RNACentral5 extends AnyRNAcentral("5.0") {
     tax_id      :×:
     rna_type    :×:
     gene_name   :×:
-    |[AnyType]
+    |[Field]
   )
 }
 ```
@@ -65,9 +69,11 @@ This bundle
 
 
 ```scala
-case object MirrorRNAcentralRelease extends Bundle() {
+class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
-  val rnaCentral: RNACentral5.type = RNACentral5
+  type RNACentral = R
+  val rnaCentral: RNACentral = r
+
   lazy val dataFolder = file"/media/ephemeral0"
 
   lazy val rnaCentralFastaFile    = dataFolder/"rnacentral_active.fasta"
@@ -185,12 +191,17 @@ This method keeps from the id2taxa csv those present in the active RNACentral fa
   }
 }
 
+// bundle:
+case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
+
 ```
 
 
 
 
-[test/scala/18sitsdatabase.scala]: ../../test/scala/18sitsdatabase.scala.md
-[main/scala/runBundles.scala]: runBundles.scala.md
-[main/scala/rnacentralrelease.scala]: rnacentralrelease.scala.md
+[main/scala/blastDB.scala]: blastDB.scala.md
 [main/scala/csvUtils.scala]: csvUtils.scala.md
+[main/scala/rnaCentral.scala]: rnaCentral.scala.md
+[test/scala/18sitsdatabase.scala]: ../../test/scala/18sitsdatabase.scala.md
+[test/scala/compats.scala]: ../../test/scala/compats.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md

@@ -1,3 +1,5 @@
+
+```scala
 package era7bio.db.test
 
 import ohnosequences.statika._, aws._
@@ -22,3 +24,15 @@ case object runBundles {
       )
       .map { _.getInstanceId }
 }
+
+```
+
+
+
+
+[main/scala/blastDB.scala]: ../../main/scala/blastDB.scala.md
+[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
+[main/scala/rnaCentral.scala]: ../../main/scala/rnaCentral.scala.md
+[test/scala/18sitsdatabase.scala]: 18sitsdatabase.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
