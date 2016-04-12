@@ -33,7 +33,9 @@ class RNACentralFileWrangling extends FunSuite {
 
 
 
-[test/scala/18sitsdatabase.scala]: 18sitsdatabase.scala.md
-[main/scala/runBundles.scala]: ../../main/scala/runBundles.scala.md
-[main/scala/rnacentralrelease.scala]: ../../main/scala/rnacentralrelease.scala.md
+[main/scala/blastDB.scala]: ../../main/scala/blastDB.scala.md
 [main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
+[main/scala/rnaCentral.scala]: ../../main/scala/rnaCentral.scala.md
+[test/scala/18sitsdatabase.scala]: 18sitsdatabase.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
