@@ -25,40 +25,21 @@ trait AnyBlastDB {
 
   val predicate: (Row, FASTA.Value) => Boolean
 
-  private[db] val sourceFasta: S3Object
-  private[db] val sourceTable: S3Object
+  val rnaCentralRelease: AnyRNAcentral
+  private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
+  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.id2taxaactive
 
   val s3location: S3Folder
-
-  case object release extends Bundle() {
-    val destination: File = File(s3location.key)
-
-    val id2taxa: File = destination / "id2taxa.tsv"
-
-    // This is where the DB will be downloaded
-    val dbLocation: File = destination / "blastdb/"
-    // This is what you pass to BLAST
-    val dbName: File = dbLocation / s"${name}.fasta"
-
-    def instructions: AnyInstructions = {
-      LazyTry {
-        val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-        transferManager.downloadDirectory(
-          s3location.bucket, s3location.key,
-          file".".toJava
-        ).waitForCompletion
-      } -&-
-      say(s"Reference database ${name} was dowloaded to ${dbLocation.path}")
-    }
-  }
 }
 
 
 case object blastBundle extends Blast("2.2.31")
 
 
-class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) {
+class GenerateBlastDB[DB <: AnyBlastDB](db0: DB) extends Bundle(blastBundle) {
+
+  type BlastDB = DB
+  val db: BlastDB = db0
 
   // Files
   lazy val sources = file"sources/"
@@ -67,8 +48,9 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta: File = outputs / s"${db.name}.fasta"
-  lazy val outputTable: File = outputs / db.release.id2taxa.name
+  lazy val outputFasta:   File =  outputs / s"${db.name}.fasta"
+  lazy val outputTable:   File =  outputs / "id2taxa.tsv"
+  lazy val outputBlastDB: File = (outputs / "blastdb/").createDirectory()
 
 
   def instructions: AnyInstructions = {
@@ -117,10 +99,9 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       println("Uploading the DB...")
 
       // Moving blast DB files to a separate folder
-      val blastdbDir = (outputs / "blastdb").createDirectory()
       outputs.list
         .filter{ _.name.startsWith(s"${outputFasta.name}.") }
-        .foreach { f => f.moveTo(blastdbDir / f.name) }
+        .foreach { f => f.moveTo(outputBlastDB / f.name) }
 
       // Uploading all together
       transferManager.uploadDirectory(
@@ -177,4 +158,33 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
     tableWriter.close()
   }
 
+}
+
+
+// This bundle downloads a BlastDB and provides interface for using it.
+// It uses generation bundle as a reference to know the exact filenames.
+class BlastDBRelease[DB <: AnyBlastDB](generated: GenerateBlastDB[DB]) extends Bundle() {
+
+  type BlastDB = DB
+  lazy val db: BlastDB = generated.db
+
+  lazy val destination: File = File(db.s3location.key)
+
+  lazy val id2taxa:    File = destination / generated.outputTable.name
+  // This is where the BLAST DB will be downloaded
+  lazy val dbLocation: File = destination / generated.outputBlastDB.name
+  // This is what you pass to BLAST
+  lazy val dbName:     File = dbLocation / generated.outputFasta.name
+
+  def instructions: AnyInstructions = {
+    LazyTry {
+      val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+      transferManager.downloadDirectory(
+        db.s3location.bucket, db.s3location.key,
+        file".".toJava
+      ).waitForCompletion
+    } -&-
+    say(s"Reference database ${db.name} was dowloaded to ${destination.path}")
+  }
 }
