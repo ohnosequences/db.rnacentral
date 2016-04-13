@@ -38,10 +38,10 @@ trait AnyBlastDB {
 case object blastBundle extends Blast("2.2.31")
 
 
-class GenerateBlastDB[DB <: AnyBlastDB](db0: DB) extends Bundle(blastBundle) {
+trait AnyGenerateBlastDB extends AnyBundle {
 
-  type BlastDB = DB
-  val db: BlastDB = db0
+  type BlastDB <: AnyBlastDB
+  val db: BlastDB
 
   // Files
   lazy val sources = file"sources/"
@@ -50,10 +50,9 @@ class GenerateBlastDB[DB <: AnyBlastDB](db0: DB) extends Bundle(blastBundle) {
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta:   File =  outputs / s"${db.name}.fasta"
-  lazy val outputTable:   File =  outputs / "id2taxa.tsv"
-  lazy val outputBlastDB: File = (outputs / "blastdb/").createDirectory()
-
+  lazy val outputFasta:   File = outputs / s"${db.name}.fasta"
+  lazy val outputTable:   File = outputs / "id2taxa.tsv"
+  lazy val outputBlastDB: File = outputs / "blastdb"
 
   def instructions: AnyInstructions = {
 
@@ -101,6 +100,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](db0: DB) extends Bundle(blastBundle) {
       println("Uploading the DB...")
 
       // Moving blast DB files to a separate folder
+      outputBlastDB.createDirectory()
       outputs.list
         .filter{ _.name.startsWith(s"${outputFasta.name}.") }
         .foreach { f => f.moveTo(outputBlastDB / f.name) }
@@ -162,13 +162,20 @@ class GenerateBlastDB[DB <: AnyBlastDB](db0: DB) extends Bundle(blastBundle) {
 
 }
 
+class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)
+  extends Bundle(blastBundle)
+  with AnyGenerateBlastDB { type BlastDB = DB }
+
 
 // This bundle downloads a BlastDB and provides interface for using it.
 // It uses generation bundle as a reference to know the exact filenames.
-class BlastDBRelease[DB <: AnyBlastDB](generated: GenerateBlastDB[DB]) extends Bundle() {
+trait AnyBlastDBRelease extends AnyBundle {
 
-  type BlastDB = DB
-  lazy val db: BlastDB = generated.db
+  type Generated <: AnyGenerateBlastDB
+  val generated: Generated
+
+  type BlastDB = Generated#BlastDB
+  val db: BlastDB = generated.db
 
   lazy val destination: File = File(db.s3location.key)
 
@@ -190,6 +197,10 @@ class BlastDBRelease[DB <: AnyBlastDB](generated: GenerateBlastDB[DB]) extends B
     say(s"Reference database ${db.name} was dowloaded to ${destination.path}")
   }
 }
+
+class BlastDBRelease[G <: AnyGenerateBlastDB](val generated: G)
+  extends Bundle()
+  with AnyBlastDBRelease { type Generated = G }
 
 ```
 
