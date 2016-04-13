@@ -1,0 +1,2 @@
+* Fixed the blastdb directory file reference
+* Added Any-traits for generate and release bundles
