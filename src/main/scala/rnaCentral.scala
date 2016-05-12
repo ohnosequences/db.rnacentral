@@ -25,12 +25,10 @@ abstract class AnyRNACentral(val version: String) {
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
   val tableActiveFileName: String = s"table.active.${version}.tsv"
-  val id2taxasFileName:    String = s"id2taxas.active.${version}.tsv"
 
   lazy val fasta:       S3Object = prefix/fastaFileName
   lazy val table:       S3Object = prefix/tableFileName
   lazy val tableActive: S3Object = prefix/tableActiveFileName
-  lazy val id2taxas:    S3Object = prefix/id2taxasFileName
 }
 
 case object RNACentral5 extends AnyRNACentral("5.0") {
@@ -80,9 +78,8 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
   // inputs:
   lazy val rnaCentralFastaFile = dataFolder/"rnacentral_active.fasta"
   lazy val tableFile           = dataFolder/"id_mapping.tsv"
-  // outputs:
+  // output:
   lazy val tableActiveFile = dataFolder/rnaCentral.tableActiveFileName
-  lazy val id2taxasFile    = dataFolder/rnaCentral.id2taxasFileName
 
   lazy val getRnaCentralFastaFileGz = cmd("wget")(
     s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/sequences/${rnaCentralFastaFile.name}.gz"
@@ -107,7 +104,6 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
       val tableReader = CSVReader.open(tableFile.toJava)(tableFormat)
 
       val tableActiveWriter = CSVWriter.open(tableActiveFile.toJava, append = true)(tableFormat)
-      val id2taxasWriter    = CSVWriter.open(id2taxasFile.toJava,    append = true)(tableFormat)
 
       // TODO: check that all fastaIDs are present in the table?
       // errLogFile << s"${fa.getV(header)} not found in ${id2taxaFile}. All subsequent will fail"
@@ -118,16 +114,9 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
         .groupBy { _.select(id) }
         .foreach { case (id, rows) =>
           if (fastaIDs.contains(id)) {
-
             // writing all rows for this ID to the active table
             rows.foreach { tableActiveWriter.writeRow }
-
-            // writing ID with all taxIDs corresponding to it (in one column)
-            val taxas = rows.map{ _.select(tax_id) }.distinct.mkString("; ")
-            id2taxasWriter.writeRow(Seq(id, taxas))
-
           } else {
-
             // TODO: write these inactive ids somewhere?
             println(s"Skipping inactive ID: ${id}")
           }
@@ -135,7 +124,6 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
       tableReader.close()
       tableActiveWriter.close()
-      id2taxasWriter.close()
     } -&-
     LazyTry {
       val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
@@ -156,12 +144,6 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
       transferManager.upload(
         rnaCentral.tableActive.bucket, rnaCentral.tableActive.key,
         tableActiveFile.toJava
-      ).waitForCompletion
-
-      // upload id2taxas file
-      transferManager.upload(
-        rnaCentral.id2taxas.bucket, rnaCentral.id2taxas.key,
-        id2taxasFile.toJava
       ).waitForCompletion
     } -&-
     say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only table mapping")
