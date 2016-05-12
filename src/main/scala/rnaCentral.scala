@@ -95,6 +95,7 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
     getRnaCentralIdMappingGz -&-
     cmd("gzip")("-d", s"${tableFile.name}.gz") -&-
     LazyTry {
+      println("Filtering the table...")
 
       val fastaIDs: Set[String] = fasta
         .parseFastaDropErrors(rnaCentralFastaFile.lines)
@@ -110,17 +111,16 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
       import RNACentral5._
 
-      tableReader.iterator.toStream
-        .groupBy { _.select(id) }
-        .foreach { case (id, rows) =>
-          if (fastaIDs.contains(id)) {
-            // writing all rows for this ID to the active table
-            rows.foreach { tableActiveWriter.writeRow }
-          } else {
-            // TODO: write these inactive ids somewhere?
-            println(s"Skipping inactive ID: ${id}")
-          }
+      tableReader.iterator.foreach { row =>
+        val rowID = row.select(id)
+        if (fastaIDs.contains(rowID)) {
+          // writing all rows for this ID to the active table
+          tableActiveWriter.writeRow(row)
+        } else {
+          // TODO: write these inactive ids somewhere?
+          println(s"Skipping inactive ID: ${rowID}")
         }
+      }
 
       tableReader.close()
       tableActiveWriter.close()
