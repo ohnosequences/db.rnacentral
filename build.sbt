@@ -8,6 +8,11 @@ scalaVersion := "2.11.8"
 
 bucketSuffix  := "era7.com"
 
+resolvers := Seq(
+  "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
+  "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
+) ++ resolvers.value
+
 libraryDependencies ++= Seq(
   "ohnosequences" %% "fastarious" % "0.6.0",
   "ohnosequences" %% "blast-api"  % "0.7.0",

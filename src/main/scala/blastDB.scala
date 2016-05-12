@@ -11,10 +11,9 @@ import ohnosequencesBundles.statika.Blast
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 
-import com.github.tototoshi.csv._
-
 import better.files._
 
+import com.github.tototoshi.csv._
 import csvUtils._, RNACentral5._
 
 
@@ -27,7 +26,7 @@ trait AnyBlastDB {
 
   val rnaCentralRelease: AnyRNACentral
   private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
-  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.id2taxaactive
+  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.tableActive
 
   val s3location: S3Folder
 }
