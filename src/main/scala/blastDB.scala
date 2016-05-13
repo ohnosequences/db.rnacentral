@@ -26,7 +26,7 @@ trait AnyBlastDB {
 
   val rnaCentralRelease: AnyRNACentral
   private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
-  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.tableActive
+  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.table
 
   val s3location: S3Folder
 }

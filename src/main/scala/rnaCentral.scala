@@ -24,11 +24,9 @@ abstract class AnyRNACentral(val version: String) {
 
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
-  val tableActiveFileName: String = s"table.active.${version}.tsv"
 
   lazy val fasta:       S3Object = prefix/fastaFileName
   lazy val table:       S3Object = prefix/tableFileName
-  lazy val tableActive: S3Object = prefix/tableActiveFileName
 }
 
 case object RNACentral5 extends AnyRNACentral("5.0") {
@@ -75,14 +73,11 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 
   lazy val dataFolder = file"/media/ephemeral0"
 
-  // inputs:
-  lazy val rnaCentralFastaFile = dataFolder/"rnacentral_active.fasta"
-  lazy val tableFile           = dataFolder/"id_mapping.tsv"
-  // output:
-  lazy val tableActiveFile = dataFolder/rnaCentral.tableActiveFileName
+  lazy val fastaFile = dataFolder/"rnacentral_active.fasta"
+  lazy val tableFile = dataFolder/"id_mapping.tsv"
 
   lazy val getRnaCentralFastaFileGz = cmd("wget")(
-    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/sequences/${rnaCentralFastaFile.name}.gz"
+    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/sequences/${fastaFile.name}.gz"
   )
   lazy val getRnaCentralIdMappingGz = cmd("wget")(
     s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/id_mapping/${tableFile.name}.gz"
@@ -91,59 +86,23 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
   def instructions: AnyInstructions = {
     // get raw input stuff from EBI FTP
     getRnaCentralFastaFileGz -&-
-    cmd("gzip")("-d", s"${rnaCentralFastaFile.name}.gz") -&-
+    cmd("gzip")("-d", s"${fastaFile.name}.gz") -&-
     getRnaCentralIdMappingGz -&-
     cmd("gzip")("-d", s"${tableFile.name}.gz") -&-
     LazyTry {
-      println("Filtering the table...")
-
-      val fastaIDs: Set[String] = fasta
-        .parseFastaDropErrors(rnaCentralFastaFile.lines)
-        .map{ _.getV(header).id }
-        .toSet
-
-      val tableReader = CSVReader.open(tableFile.toJava)(tableFormat)
-
-      val tableActiveWriter = CSVWriter.open(tableActiveFile.toJava, append = true)(tableFormat)
-
-      // TODO: check that all fastaIDs are present in the table?
-      // errLogFile << s"${fa.getV(header)} not found in ${id2taxaFile}. All subsequent will fail"
-
-      import RNACentral5._
-
-      tableReader.iterator.foreach { row =>
-        val rowID = row.select(id)
-        if (fastaIDs.contains(rowID)) {
-          // writing all rows for this ID to the active table
-          tableActiveWriter.writeRow(row)
-        } else {
-          // TODO: write these inactive ids somewhere?
-          println(s"Skipping inactive ID: ${rowID}")
-        }
-      }
-
-      tableReader.close()
-      tableActiveWriter.close()
-    } -&-
-    LazyTry {
+      println("Uploading uncompressed data...")
       val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
 
       // upload the uncompressed fasta file
       transferManager.upload(
         rnaCentral.fasta.bucket, rnaCentral.fasta.key,
-        rnaCentralFastaFile.toJava
+        fastaFile.toJava
       ).waitForCompletion
 
       // upload full table file
       transferManager.upload(
         rnaCentral.table.bucket, rnaCentral.table.key,
         tableFile.toJava
-      ).waitForCompletion
-
-      // upload active table file
-      transferManager.upload(
-        rnaCentral.tableActive.bucket, rnaCentral.tableActive.key,
-        tableActiveFile.toJava
       ).waitForCompletion
     } -&-
     say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only table mapping")
