@@ -113,7 +113,7 @@ trait AnyGenerateBlastDB extends AnyBundle {
   }
 
   // This is the main processing part, that is separate to facilitate local testing
-  final def processSources(
+  def processSources(
     tableInFile: File,
     tableOutFile: File
   )(fastaInFile: File,
@@ -133,7 +133,6 @@ trait AnyGenerateBlastDB extends AnyBundle {
 
     groupedRows.foreach { case (commonID, rows) =>
 
-      // NOTE: this makes prefiltering of the RNACentral DB quite pointless
       fastas.get(commonID) match {
         case None => sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
         case Some(fasta) => {
@@ -162,8 +161,8 @@ trait AnyGenerateBlastDB extends AnyBundle {
 
 }
 
-class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)
-  extends Bundle(blastBundle)
+class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)(deps: AnyBundle*)
+  extends Bundle(blastBundle +: deps.toSeq: _*)
   with AnyGenerateBlastDB { type BlastDB = DB }
 
 
