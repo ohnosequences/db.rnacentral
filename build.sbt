@@ -4,6 +4,8 @@ name          := "db.rnacentral"
 organization  := "era7bio"
 description   := "Code generation and bundle for a 18S RNA databases"
 
+GithubRelease.repo := organization.value +"/"+ name.value
+
 scalaVersion := "2.11.8"
 
 bucketSuffix  := "era7.com"
