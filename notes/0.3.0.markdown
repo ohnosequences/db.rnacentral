@@ -1,0 +1,6 @@
+* Removed table pre-filtering; mirroring just uncompresses the data and uploads it to S3
+* Renamed id2taxa* things to table* (they contain all columns)
+* Rewrote BlastDB generation code to use multiple id-taxa mapping
+* Removed grouping; chose an instance with a lot of memory
+* Fixed GenerateBlastDB bundle deps, made processSources non-final
+* Changed artifact name and added artifact version to the output S3 location
