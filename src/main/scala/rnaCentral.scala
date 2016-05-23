@@ -20,7 +20,12 @@ import csvUtils._
 */
 abstract class AnyRNACentral(val version: String) {
 
-  lazy val prefix = S3Object("resources.ohnosequences.com","")/"rnacentral"/version/
+  val metadata = generated.metadata.db.rnacentral
+
+  lazy val prefix = S3Object("resources.ohnosequences.com", metadata.organization)
+    metadata.artifact /
+    version / // of RNAcentral
+    metadata.version.stripSuffix("-SNAPSHOT")
 
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
