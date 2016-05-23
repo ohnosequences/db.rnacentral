@@ -11,7 +11,7 @@ case object rnaCentralCompats {
       javaHeap = 20 // in G
     ),
     b,
-    generated.metadata.rnacentraldb
+    generated.metadata.db.rnacentral
   )
 
   // compatible:

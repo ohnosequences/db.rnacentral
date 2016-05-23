@@ -1,6 +1,6 @@
 Nice.scalaProject
 
-name          := "rnacentraldb"
+name          := "db.rnacentral"
 organization  := "era7bio"
 description   := "Code generation and bundle for a 18S RNA databases"
 
@@ -34,8 +34,8 @@ parallelExecution in Test := false
 fatArtifactSettings
 
 enablePlugins(BuildInfoPlugin)
-buildInfoPackage := "generated.metadata"
-buildInfoObject  := name.value
+buildInfoPackage := "generated.metadata.db"
+buildInfoObject  := "rnacentral"
 buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
