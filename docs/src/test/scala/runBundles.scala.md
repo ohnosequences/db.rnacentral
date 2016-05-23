@@ -17,7 +17,7 @@ case object runBundles {
       .runInstances(
         amount = 1,
         compat.instanceSpecs(
-          c3.x2large,
+          r3.x2large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
         )

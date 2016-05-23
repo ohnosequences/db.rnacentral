@@ -13,10 +13,9 @@ import ohnosequencesBundles.statika.Blast
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 
-import com.github.tototoshi.csv._
-
 import better.files._
 
+import com.github.tototoshi.csv._
 import csvUtils._, RNACentral5._
 
 
@@ -29,7 +28,7 @@ trait AnyBlastDB {
 
   val rnaCentralRelease: AnyRNACentral
   private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
-  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.id2taxaactive
+  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.table
 
   val s3location: S3Folder
 }
@@ -116,7 +115,7 @@ trait AnyGenerateBlastDB extends AnyBundle {
   }
 
   // This is the main processing part, that is separate to facilitate local testing
-  final def processSources(
+  def processSources(
     tableInFile: File,
     tableOutFile: File
   )(fastaInFile: File,
@@ -128,33 +127,35 @@ trait AnyGenerateBlastDB extends AnyBundle {
     val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
     val tableWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
 
-    val rows: Iterator[Row] = tableReader.iterator
-    val fastas: Iterator[FASTA.Value] = parseFastaDropErrors(fastaInFile.lines)
+    // Loading the whole FASTA map in memory:
+    val fastas: Map[String, FASTA.Value] = parseFastaDropErrors(fastaInFile.lines)
+      .map{ f => f.getV(header).id -> f }.toMap
 
-    // NOTE: here we rely on that the sources are prefiltered and don't have duplicate ID
-    (rows zip fastas)
-      .filter { case (row, fasta) => db.predicate(row, fasta) }
-      .foreach { case (row, fasta) =>
+    val groupedRows = tableReader.iterator.toStream.groupBy { _.select(id) }
 
-        val rowID = row.select(id)
-        val fastaID = fasta.getV(header).id
+    groupedRows.foreach { case (commonID, rows) =>
 
-        if (rowID != fastaID)
-          sys.error(s"Table row ID [${rowID}] doesn't match FASTA ID [${fastaID}]!")
+      fastas.get(commonID) match {
+        case None => sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
+        case Some(fasta) => {
 
-        val extID = s"${rowID}|lcl|${db.name}"
+          val extID = s"${commonID}|lcl|${db.name}"
 
-        tableWriter.writeRow(List(
-          extID,
-          row.select(tax_id)
-        ))
+          val taxas: Set[String] = rows
+            .filter{ db.predicate(_, fasta) }
+            .map{ _.select(tax_id) }
+            .toSet
 
-        fastaOutFile.appendLine(
-          fasta.update(
-            header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
-          ).asString
-        )
+          tableWriter.writeRow( Seq(extID, taxas.mkString(";")) )
+
+          fastaOutFile.appendLine(
+            fasta.update(
+              header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
+            ).asString
+          )
+        }
       }
+    }
 
     tableReader.close()
     tableWriter.close()
@@ -162,8 +163,8 @@ trait AnyGenerateBlastDB extends AnyBundle {
 
 }
 
-class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)
-  extends Bundle(blastBundle)
+class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)(deps: AnyBundle*)
+  extends Bundle(blastBundle +: deps.toSeq: _*)
   with AnyGenerateBlastDB { type BlastDB = DB }
 
 
