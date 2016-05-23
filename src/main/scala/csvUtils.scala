@@ -13,16 +13,6 @@ case object csvUtils {
     override val escapeChar = '†'
   }
 
-  def csvReader(file: File): CSVReader = CSVReader.open(file.toJava)(tableFormat)
-
-  def lines(file: File): Iterator[Seq[String]] = csvReader(file) iterator
-
-  // TODO much unsafe, add errors
-  def rows(file: File)(headers: Seq[String]): Iterator[Map[String,String]] =
-    lines(file) map { line => (headers zip line) toMap }
-
-
-  // TODO: use a better representation for the table row
   type Row = Seq[String]
 
   implicit def rowOps(row: Row): RowOps = RowOps(row)
