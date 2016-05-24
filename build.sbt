@@ -33,18 +33,18 @@ parallelExecution in Test := false
 
 
 // Uncomment this to publish fat-jar with bundles:
-fatArtifactSettings
+// fatArtifactSettings
 
 enablePlugins(BuildInfoPlugin)
 buildInfoPackage := "generated.metadata.db"
 buildInfoObject  := "rnacentral"
-buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
+// buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
   version,
-  "artifact" -> name.value.toLowerCase,
-  "artifactUrl" -> fatArtifactUrl.value
+  "artifact" -> name.value.toLowerCase
+  // "artifactUrl" -> fatArtifactUrl.value
 )
 
 // For including test code in the fat artifact:
-unmanagedSourceDirectories in Compile += (scalaSource in Test).value / "compats.scala"
+// unmanagedSourceDirectories in Compile += (scalaSource in Test).value / "compats.scala"
