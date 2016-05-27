@@ -49,9 +49,24 @@ trait AnyGenerateBlastDB extends AnyBundle {
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta:   File = outputs / s"${db.name}.fasta"
-  lazy val outputTable:   File = outputs / "id2taxa.tsv"
+  lazy val discardedFasta: File = outputs / "discarded" / s"${db.name}.fasta"
+  lazy val discardedTable: File = outputs / "discarded" / "id2taxa.tsv"
+
+  lazy val outputFasta: File = outputs / "data" /s"${db.name}.fasta"
+  lazy val outputTable: File = outputs / "data" /"id2taxa.tsv"
   lazy val outputBlastDB: File = outputs / "blastdb"
+
+
+  // This is the main processing part, that is separate to facilitate local testing
+  def processSources(
+    tableInFile: File,
+    tableOutFile: File,
+    tableDiscardedFile: File
+  )(fastaInFile: File,
+    fastaOutFile: File,
+    fastaDiscardedFile: File
+  ): Unit
+
 
   def instructions: AnyInstructions = {
 
@@ -76,12 +91,22 @@ trait AnyGenerateBlastDB extends AnyBundle {
     LazyTry {
       println("Processing sources...")
 
+      outputTable.createIfNotExists()
+      outputFasta.createIfNotExists()
+
+      discardedTable.createIfNotExists()
+      discardedFasta.createIfNotExists()
+
       processSources(
         sourceTable,
-        outputTable
+        outputTable,
+        discardedTable
       )(sourceFasta,
-        outputFasta
+        outputFasta,
+        discardedFasta
       )
+
+      println("Generating BLAST DB...")
     } -&-
     seqToInstructions(
       makeblastdb(
@@ -100,7 +125,7 @@ trait AnyGenerateBlastDB extends AnyBundle {
 
       // Moving blast DB files to a separate folder
       outputBlastDB.createDirectory()
-      outputs.list
+      (outputs / "data").list
         .filter{ _.name.startsWith(s"${outputFasta.name}.") }
         .foreach { f => f.moveTo(outputBlastDB / f.name) }
 
@@ -114,56 +139,9 @@ trait AnyGenerateBlastDB extends AnyBundle {
     say(s"The database is uploaded to [${db.s3location}]")
   }
 
-  // This is the main processing part, that is separate to facilitate local testing
-  def processSources(
-    tableInFile: File,
-    tableOutFile: File
-  )(fastaInFile: File,
-    fastaOutFile: File
-  ) {
-    tableOutFile.createIfNotExists()
-    fastaOutFile.createIfNotExists()
-
-    val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
-    val tableWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
-
-    // Loading the whole FASTA map in memory:
-    val fastas: Map[String, FASTA.Value] = parseFastaDropErrors(fastaInFile.lines)
-      .map{ f => f.getV(header).id -> f }.toMap
-
-    val groupedRows = tableReader.iterator.toStream.groupBy { _.select(id) }
-
-    groupedRows.foreach { case (commonID, rows) =>
-
-      fastas.get(commonID) match {
-        case None => sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
-        case Some(fasta) => {
-
-          val extID = s"${commonID}|lcl|${db.name}"
-
-          val taxas: Set[String] = rows
-            .filter{ db.predicate(_, fasta) }
-            .map{ _.select(tax_id) }
-            .toSet
-
-          tableWriter.writeRow( Seq(extID, taxas.mkString(";")) )
-
-          fastaOutFile.appendLine(
-            fasta.update(
-              header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
-            ).asString
-          )
-        }
-      }
-    }
-
-    tableReader.close()
-    tableWriter.close()
-  }
-
 }
 
-class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)(deps: AnyBundle*)
+abstract class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)(deps: AnyBundle*)
   extends Bundle(blastBundle +: deps.toSeq: _*)
   with AnyGenerateBlastDB { type BlastDB = DB }
 
@@ -180,7 +158,7 @@ trait AnyBlastDBRelease extends AnyBundle {
 
   lazy val destination: File = File(db.s3location.key)
 
-  lazy val id2taxa:    File = destination / generated.outputTable.name
+  lazy val id2taxa:    File = destination / "data" / generated.outputTable.name
   // This is where the BLAST DB will be downloaded
   lazy val dbLocation: File = destination / generated.outputBlastDB.name
   // This is what you pass to BLAST
