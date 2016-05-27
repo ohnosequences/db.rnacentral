@@ -1,0 +1,3 @@
+* Fixed github repo name
+* Fixed S3 location
+* Removed BlastDB default processing method; leave it for overriding
