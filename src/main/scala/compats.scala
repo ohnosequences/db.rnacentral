@@ -5,11 +5,11 @@ import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autosc
 
 case object rnaCentralCompats {
 
-  class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap = 10 /*G*/) extends Compatible(
+  class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int = 10 /*G*/) extends Compatible(
     amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
     bundle,
     generated.metadata.db.rnacentral
   )
 
-  case object MirrorRNAcentral5Compat extends DefaultCompatible(MirrorRNAcentral5)
+  case object MirrorRNAcentral5 extends DefaultCompatible(era7bio.db.MirrorRNAcentral5)
 }
