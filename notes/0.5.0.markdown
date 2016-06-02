@@ -1,0 +1,4 @@
+* Simplified GenerateBlastDB bundle to do only that
+* Added FilterData bundle to define filtering steps
+* Removed ReleaseBlastDB
+* Moved collectionUtils from db.rna16s as they may be useful for other db-libs
