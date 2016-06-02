@@ -8,7 +8,7 @@ case object csvUtils {
 
   import com.github.tototoshi.csv._
 
-  case object tableFormat extends TSVFormat {
+  case object tsvFormat extends TSVFormat {
 
     override val lineTerminator = "\n"
     // NOTE: this tsv has '\' inside fields
@@ -21,7 +21,7 @@ case object csvUtils {
 }
 
 case class RowOps(row: csvUtils.Row) extends AnyVal {
-  import csvUtils._, RNACentral5._
+  import csvUtils._, rnacentral.RNACentral5._
 
   def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
 
@@ -34,8 +34,9 @@ case class RowOps(row: csvUtils.Row) extends AnyVal {
 
 
 [main/scala/blastDB.scala]: blastDB.scala.md
+[main/scala/collectionUtils.scala]: collectionUtils.scala.md
 [main/scala/csvUtils.scala]: csvUtils.scala.md
-[main/scala/rnaCentral.scala]: rnaCentral.scala.md
-[test/scala/18sitsdatabase.scala]: ../../test/scala/18sitsdatabase.scala.md
-[test/scala/compats.scala]: ../../test/scala/compats.scala.md
+[main/scala/filterData.scala]: filterData.scala.md
+[main/scala/rnacentral/compats.scala]: rnacentral/compats.scala.md
+[main/scala/rnacentral/rnaCentral.scala]: rnacentral/rnaCentral.scala.md
 [test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
