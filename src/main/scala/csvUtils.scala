@@ -6,7 +6,7 @@ case object csvUtils {
 
   import com.github.tototoshi.csv._
 
-  case object tableFormat extends TSVFormat {
+  case object tsvFormat extends TSVFormat {
 
     override val lineTerminator = "\n"
     // NOTE: this tsv has '\' inside fields
