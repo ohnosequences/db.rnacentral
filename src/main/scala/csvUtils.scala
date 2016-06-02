@@ -6,7 +6,7 @@ case object csvUtils {
 
   import com.github.tototoshi.csv._
 
-  case object tableFormat extends TSVFormat {
+  case object tsvFormat extends TSVFormat {
 
     override val lineTerminator = "\n"
     // NOTE: this tsv has '\' inside fields
@@ -19,7 +19,7 @@ case object csvUtils {
 }
 
 case class RowOps(row: csvUtils.Row) extends AnyVal {
-  import csvUtils._, RNACentral5._
+  import csvUtils._, rnacentral.RNACentral5._
 
   def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
 

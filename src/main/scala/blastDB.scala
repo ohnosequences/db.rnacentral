@@ -2,7 +2,6 @@ package era7bio.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
-import ohnosequences.fastarious.fasta._
 import ohnosequences.blast.api._
 import ohnosequences.awstools.s3._
 
@@ -13,58 +12,25 @@ import com.amazonaws.services.s3.transfer._
 
 import better.files._
 
-import com.github.tototoshi.csv._
-import csvUtils._, RNACentral5._
-
-
-trait AnyBlastDB {
-  val dbType: BlastDBType
-
-  val name: String
-
-  val predicate: (Row, FASTA.Value) => Boolean
-
-  val rnaCentralRelease: AnyRNACentral
-  private[db] lazy val sourceFasta: S3Object = rnaCentralRelease.fasta
-  private[db] lazy val sourceTable: S3Object = rnaCentralRelease.table
-
-  val s3location: S3Folder
-}
-
 
 case object blastBundle extends Blast("2.2.31")
 
 
-trait AnyGenerateBlastDB extends AnyBundle {
+/* This bundle takes source data from the given place, generates BlastDB and
+   uploads it to S3. It _does not_ do any filtering, it should be handled by
+   other bundles which can be listed as dependencies.
+*/
+abstract class GenerateBlastDB(
+  val dbType: BlastDBType,
+  val dbName: String,
+  val sourceFastaS3: S3Object,
+  val outputS3Prefix: S3Folder // where the generated files will be uploaded
+)(deps: AnyBundle*) extends Bundle(blastBundle +: deps.toSeq: _*) {
 
-  type BlastDB <: AnyBlastDB
-  val db: BlastDB
-
-  // Files
   lazy val sources = file"sources/"
   lazy val outputs = file"outputs/"
 
-  lazy val sourceFasta: File = sources / "source.fasta"
-  lazy val sourceTable: File = sources / "source.table.tsv"
-
-  lazy val discardedFasta: File = outputs / "discarded" / s"${db.name}.fasta"
-  lazy val discardedTable: File = outputs / "discarded" / "id2taxa.tsv"
-
-  lazy val outputFasta: File = outputs / "data" /s"${db.name}.fasta"
-  lazy val outputTable: File = outputs / "data" /"id2taxa.tsv"
-  lazy val outputBlastDB: File = outputs / "blastdb"
-
-
-  // This is the main processing part, that is separate to facilitate local testing
-  def processSources(
-    tableInFile: File,
-    tableOutFile: File,
-    tableDiscardedFile: File
-  )(fastaInFile: File,
-    fastaOutFile: File,
-    fastaDiscardedFile: File
-  ): Unit
-
+  lazy val sourceFastaFile: File = sources / s"${dbName}.fasta"
 
   def instructions: AnyInstructions = {
 
@@ -72,109 +38,45 @@ trait AnyGenerateBlastDB extends AnyBundle {
 
     LazyTry {
       println(s"""Downloading the sources...
-        |fasta: ${db.sourceFasta}
-        |table: ${db.sourceTable}
+        |fasta: ${sourceFastaS3}
         |""".stripMargin)
 
       transferManager.download(
-        db.sourceFasta.bucket, db.sourceFasta.key,
-        sourceFasta.toJava
+        sourceFastaS3.bucket, sourceFastaS3.key,
+        sourceFastaFile.toJava
       ).waitForCompletion
-
-      transferManager.download(
-        db.sourceTable.bucket, db.sourceTable.key,
-        sourceTable.toJava
-      ).waitForCompletion
-    } -&-
-    LazyTry {
-      println("Processing sources...")
-
-      outputTable.createIfNotExists()
-      outputFasta.createIfNotExists()
-
-      discardedTable.createIfNotExists()
-      discardedFasta.createIfNotExists()
-
-      processSources(
-        sourceTable,
-        outputTable,
-        discardedTable
-      )(sourceFasta,
-        outputFasta,
-        discardedFasta
-      )
 
       println("Generating BLAST DB...")
     } -&-
     seqToInstructions(
       makeblastdb(
         argumentValues =
-          in(outputFasta) ::
+          in(sourceFastaFile) ::
           input_type(DBInputType.fasta) ::
-          dbtype(db.dbType) ::
+          dbtype(dbType) ::
           *[AnyDenotation],
         optionValues =
-          title(db.name) ::
+          title(dbName) ::
           *[AnyDenotation]
       ).toSeq
     ) -&-
     LazyTry {
       println("Uploading the DB...")
 
-      // Moving blast DB files to a separate folder
-      outputBlastDB.createDirectory()
-      (outputs / "data").list
-        .filter{ _.name.startsWith(s"${outputFasta.name}.") }
-        .foreach { f => f.moveTo(outputBlastDB / f.name) }
+      // Moving blast DB files to the outputs/ folder
+      outputs.createDirectory()
+      sources.list
+        .filter { _.name.startsWith(sourceFastaFile.name + ".") }
+        .foreach { f => f.moveTo(outputs / f.name) }
 
-      // Uploading all together
+      // Uploading outputs
       transferManager.uploadDirectory(
-        db.s3location.bucket, db.s3location.key,
+        outputS3Prefix.bucket, outputS3Prefix.key,
         outputs.toJava,
-        true // includeSubdirectories
+        false // includeSubdirectories
       ).waitForCompletion
     } -&-
-    say(s"The database is uploaded to [${db.s3location}]")
+    say(s"The database is uploaded to [${outputS3Prefix}]")
   }
 
 }
-
-abstract class GenerateBlastDB[DB <: AnyBlastDB](val db: DB)(deps: AnyBundle*)
-  extends Bundle(blastBundle +: deps.toSeq: _*)
-  with AnyGenerateBlastDB { type BlastDB = DB }
-
-
-// This bundle downloads a BlastDB and provides interface for using it.
-// It uses generation bundle as a reference to know the exact filenames.
-trait AnyBlastDBRelease extends AnyBundle {
-
-  type Generated <: AnyGenerateBlastDB
-  val generated: Generated
-
-  type BlastDB = Generated#BlastDB
-  val db: BlastDB = generated.db
-
-  lazy val destination: File = File(db.s3location.key)
-
-  lazy val id2taxa:    File = destination / "data" / generated.outputTable.name
-  // This is where the BLAST DB will be downloaded
-  lazy val dbLocation: File = destination / generated.outputBlastDB.name
-  // This is what you pass to BLAST
-  lazy val dbName:     File = dbLocation / generated.outputFasta.name
-
-  def instructions: AnyInstructions = {
-    LazyTry {
-      val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-      transferManager.downloadDirectory(
-        db.s3location.bucket, db.s3location.key,
-        file".".toJava
-      ).waitForCompletion
-    } -&-
-    say(s"Reference database ${db.name} was dowloaded to ${destination.path}")
-  }
-}
-
-class BlastDBRelease[G <: AnyGenerateBlastDB](val generated: G)
-  extends Bundle()
-  with AnyBlastDBRelease { type Generated = G }
