@@ -134,6 +134,8 @@ abstract class FilterData(
     LazyTry {
       println("Filtering the data...")
 
+      summary.table.writer.writeRow(Seq("Sequence ID", "Accepted Taxas", "Rejected Taxas"))
+
       filterData()
 
       source.table.tsvReader.close()
