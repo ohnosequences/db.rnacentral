@@ -32,16 +32,16 @@ testOptions in Test += Tests.Argument("-oD")
 parallelExecution in Test := false
 
 
-// Uncomment this to publish fat-jar with bundles:
-fatArtifactSettings
-
+// // Uncomment this to publish fat-jar with bundles:
+// fatArtifactSettings
+//
 enablePlugins(BuildInfoPlugin)
 buildInfoPackage := "generated.metadata.db"
 buildInfoObject  := "rnacentral"
-buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
+// buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
   version,
-  "artifact" -> name.value,
-  "artifactUrl" -> fatArtifactUrl.value
+  "artifact" -> name.value
+  // "artifactUrl" -> fatArtifactUrl.value
 )

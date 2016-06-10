@@ -17,15 +17,16 @@ import better.files._
    If you need to chain different filtering steps, just do it through bundle dependencies.
 */
 abstract class FilterData(
-  sourceTableS3: S3Object,
-  sourceFastaS3: S3Object,
-  outputS3Prefix: S3Folder
-)(deps: AnyBundle*) extends Bundle(deps.toSeq: _*) {
+  val sourceTableS3: S3Object,
+  val sourceFastaS3: S3Object,
+  val s3prefix: S3Folder // of the database
+)(deps: AnyBundle*) extends Bundle(deps.toSeq: _*) { filter =>
 
+  lazy val name: String = toString
 
-  /* Names of the source/accepted/rejected files are the same as of the input S3 objects */
-  final lazy val tableName: String = sourceTableS3.key.split('/').last
-  final lazy val fastaName: String = sourceFastaS3.key.split('/').last
+  final lazy val s3: S3Folder = s3prefix / name /
+  final lazy val tableName: String = name + ".csv"
+  final lazy val fastaName: String = name + ".fasta"
 
   /* Each folder has two files inside */
 
@@ -35,7 +36,10 @@ abstract class FilterData(
 
     case object table {
       lazy val file = folder.file / tableName
-      lazy val reader = CSVReader.open(this.file.toJava)(csvUtils.tsvFormat)
+
+      // use either of these two (RNAcentral table is TSV, all the outputs are CSV)
+      lazy val tsvReader = CSVReader.open(this.file.toJava)(csvUtils.RNAcentralTSVFormat)
+      lazy val csvReader = CSVReader.open(this.file.toJava)(csvUtils.UnixCSVFormat)
     }
 
     case object fasta {
@@ -44,26 +48,63 @@ abstract class FilterData(
     }
   }
 
-  /* Output folders know how to write to the files and where they will be uploaded */
-  case class outputFolder(name: String) { folder =>
-    lazy val file: File   = File(name).createDirectories()
-    lazy val s3: S3Folder = outputS3Prefix / folder.name /
+  /* Output folder knows how to write to the files and where they will be uploaded */
+  case object output { folder =>
+    lazy val file: File   = File(folder.toString).createDirectories()
+    lazy val s3: S3Folder = filter.s3 / folder.toString /
 
     case object table {
-      lazy val file: File = (folder.file / tableName).createIfNotExists()
-      lazy val writer = CSVWriter.open(this.file.toJava, append = true)(csvUtils.tsvFormat)
+      lazy val file: File   = (folder.file / tableName).createIfNotExists()
       lazy val s3: S3Object = folder.s3 / tableName
+
+      lazy val writer = CSVWriter.open(this.file.toJava, append = true)(csvUtils.UnixCSVFormat)
+
+      def add(id: String, accepted: Seq[String]): Unit =
+        writer.writeRow(Seq( id, accepted.mkString(";") ))
     }
 
     case object fasta {
       lazy val file: File = (folder.file / fastaName).createIfNotExists()
       lazy val s3: S3Object = folder.s3 / fastaName
+
+      def add(fasta: FASTA.Value): Unit = file.appendLine(fasta.asString)
     }
   }
 
-  lazy val accepted = outputFolder("accepted")
-  lazy val rejected = outputFolder("rejected")
+  /* Summary folder contains a table with all accepted/rejected assignments after this filter */
+  case object summary { folder =>
+    lazy val file: File   = File(folder.toString).createDirectories()
+    lazy val s3: S3Folder = filter.s3 / folder.toString /
 
+    case object table {
+      lazy val file: File   = (folder.file / tableName).createIfNotExists()
+      lazy val s3: S3Object = folder.s3 / tableName
+
+      lazy val writer = CSVWriter.open(this.file.toJava, append = true)(csvUtils.UnixCSVFormat)
+
+      def add(id: String, accepted: Seq[String], rejected: Seq[String]) =
+        writer.writeRow(Seq(
+          id,
+          accepted.mkString(";"),
+          rejected.mkString(";")
+        ))
+    }
+  }
+
+  // a shortcut for writing both output and summary
+  def writeOutput(
+    id: String,
+    acceptedTaxas: Seq[String],
+    rejectedTaxas: Seq[String],
+    fasta: FASTA.Value
+  ) = {
+    summary.table.add(id, acceptedTaxas, rejectedTaxas)
+
+    if (acceptedTaxas.nonEmpty) {
+      output.table.add(id, acceptedTaxas)
+      output.fasta.add(fasta)
+    }
+  }
 
   /* Implementing this method you define the filter.
      It should refer to the folders/files defined above. */
@@ -95,26 +136,35 @@ abstract class FilterData(
 
       filterData()
 
-      source.table.reader.close()
-      accepted.table.writer.close()
-      rejected.table.writer.close()
+      source.table.tsvReader.close()
+      source.table.csvReader.close()
+
+      output.table.writer.close()
+      summary.table.writer.close()
     } -&-
     LazyTry {
       println("Uploading the results...")
 
       transferManager.uploadDirectory(
-        accepted.s3.bucket, accepted.s3.key,
-        accepted.file.toJava,
+        output.s3.bucket, output.s3.key,
+        output.file.toJava,
         false // don't includeSubdirectories
       ).waitForCompletion
 
       transferManager.uploadDirectory(
-        rejected.s3.bucket, rejected.s3.key,
-        rejected.file.toJava,
+        summary.s3.bucket, summary.s3.key,
+        summary.file.toJava,
         false // don't includeSubdirectories
       ).waitForCompletion
     } -&-
-    say(s"Filtered data is uploaded to [${accepted.s3}] and [${rejected.s3}]")
+    say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")
   }
 
 }
+
+abstract class FilterDataFrom(previousFilter: FilterData)(deps: AnyBundle*)
+extends FilterData(
+  sourceTableS3 = previousFilter.output.table.s3,
+  sourceFastaS3 = previousFilter.output.fasta.s3,
+  s3prefix      = previousFilter.s3prefix
+)(deps: _*)

@@ -25,7 +25,6 @@ abstract class AnyRNACentral(val version: String) {
   lazy val prefix = S3Folder("resources.ohnosequences.com", metadata.organization) /
     metadata.artifact /
     version / // of RNAcentral
-    metadata.version.stripSuffix("-SNAPSHOT") /
 
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
