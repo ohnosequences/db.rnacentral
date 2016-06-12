@@ -1,0 +1,2 @@
+* Changed structure of FilterData outputs (one summary table with accepted/rejected taxas)
+* Added more convenience constructors for chaining filters/DB-generators and methods for operating with data
