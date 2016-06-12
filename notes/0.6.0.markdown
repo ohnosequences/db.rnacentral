@@ -1,2 +1,3 @@
 * Changed structure of FilterData outputs (one summary table with accepted/rejected taxas)
 * Added more convenience constructors for chaining filters/DB-generators and methods for operating with data
+* Changed output S3 folder to `org/name/RNAcentral-version/` (without the lib version), because we don't do anything with the data, only mirror it
