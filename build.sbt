@@ -42,6 +42,6 @@ buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifac
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
   version,
-  "artifact" -> name.value
+  "artifact" -> name.value,
   "artifactUrl" -> fatArtifactUrl.value
 )
