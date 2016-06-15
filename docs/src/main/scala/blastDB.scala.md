@@ -25,11 +25,14 @@ other bundles which can be listed as dependencies.
 
 ```scala
 abstract class GenerateBlastDB(
-  val dbType: BlastDBType,
   val dbName: String,
+  val dbType: BlastDBType,
   val sourceFastaS3: S3Object,
-  val outputS3Prefix: S3Folder // where the generated files will be uploaded
+  val s3prefix: S3Folder
 )(deps: AnyBundle*) extends Bundle(blastBundle +: deps.toSeq: _*) {
+
+  // where the generated files will be uploaded
+  final lazy val s3: S3Folder = s3prefix / "blastdb" /
 
   lazy val sources = file"sources/"
   lazy val outputs = file"outputs/"
@@ -75,15 +78,26 @@ abstract class GenerateBlastDB(
 
       // Uploading outputs
       transferManager.uploadDirectory(
-        outputS3Prefix.bucket, outputS3Prefix.key,
+        s3.bucket, s3.key,
         outputs.toJava,
         false // includeSubdirectories
       ).waitForCompletion
     } -&-
-    say(s"The database is uploaded to [${outputS3Prefix}]")
+    say(s"The database is uploaded to [${s3}]")
   }
 
 }
+
+class FilterAndGenerateBlastDB(
+  dbName: String,
+  dbType: BlastDBType,
+  filterData: FilterData
+) extends GenerateBlastDB(
+  dbName,
+  dbType,
+  sourceFastaS3 = filterData.output.fasta.s3,
+  s3prefix      = filterData.s3
+)(deps = filterData)
 
 ```
 

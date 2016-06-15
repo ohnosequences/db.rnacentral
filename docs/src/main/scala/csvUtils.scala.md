@@ -8,11 +8,15 @@ case object csvUtils {
 
   import com.github.tototoshi.csv._
 
-  case object tsvFormat extends TSVFormat {
+  case object RNAcentralTSVFormat extends TSVFormat {
 
     override val lineTerminator = "\n"
     // NOTE: this tsv has '\' inside fields
     override val escapeChar = '†'
+  }
+
+  case object UnixCSVFormat extends DefaultCSVFormat {
+    override val lineTerminator: String = "\n"
   }
 
   type Row = Seq[String]
