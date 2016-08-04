@@ -1,4 +1,4 @@
-package era7bio.db.rnacentral
+package ohnosequences.db.rnacentral
 
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
@@ -11,5 +11,5 @@ case object compats {
     generated.metadata.db.rnacentral
   )
 
-  case object MirrorRNAcentral5 extends DefaultCompatible(era7bio.db.rnacentral.MirrorRNAcentral5)
+  case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.MirrorRNAcentral5)
 }

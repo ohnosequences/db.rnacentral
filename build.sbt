@@ -1,10 +1,8 @@
 Nice.scalaProject
 
 name          := "db.rnacentral"
-organization  := "era7bio"
-description   := "Code generation and bundle for a 18S RNA databases"
-
-GithubRelease.repo := organization.value +"/"+ name.value
+organization  := "ohnosequences"
+description   := "Mirror and preprocessing of RNACentral data"
 
 scalaVersion := "2.11.8"
 
@@ -30,7 +28,6 @@ libraryDependencies ++= Seq(
 testOptions in Test += Tests.Argument("-oD")
 // disables parallel exec
 parallelExecution in Test := false
-
 
 // Uncomment this to publish fat-jar with bundles:
 fatArtifactSettings

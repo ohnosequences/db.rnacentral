@@ -1,4 +1,4 @@
-package era7bio.db
+package ohnosequences.db
 
 /* This object contains some generic collections ops that can be useful for filtering */
 case object collectionUtils {

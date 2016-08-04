@@ -1,4 +1,4 @@
-package era7bio.db.rnacentral
+package ohnosequences.db.rnacentral
 
 import ohnosequences.cosas._, types._, records._, klists._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
@@ -11,7 +11,7 @@ import com.amazonaws.services.s3.transfer._
 import better.files._
 
 import com.github.tototoshi.csv._
-import era7bio.db.csvUtils._
+import ohnosequences.db.csvUtils._
 
 /*
   ## RNACentral data
