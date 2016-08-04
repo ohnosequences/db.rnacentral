@@ -1,4 +1,4 @@
-package era7bio.db
+package ohnosequences.db
 
 import better.files._
 

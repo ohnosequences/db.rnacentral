@@ -1,4 +1,4 @@
-package era7bio.db
+package ohnosequences.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
