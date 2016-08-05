@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db
+package ohnosequences.db
 ```
 
 This object contains some generic collections ops that can be useful for filtering
@@ -11,7 +11,7 @@ case object collectionUtils {
   implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
 ```
 
-Similar to .groupBy, by lazier: computes only one group at a time
+Similar to .groupBy, but lazier: computes only one group at a time
 assuming that groups are not mixed
 
 ```scala
@@ -56,10 +56,10 @@ applying given function (`identity` by default)
 
 
 
-[main/scala/blastDB.scala]: blastDB.scala.md
-[main/scala/collectionUtils.scala]: collectionUtils.scala.md
-[main/scala/csvUtils.scala]: csvUtils.scala.md
-[main/scala/filterData.scala]: filterData.scala.md
-[main/scala/rnacentral/compats.scala]: rnacentral/compats.scala.md
-[main/scala/rnacentral/rnaCentral.scala]: rnacentral/rnaCentral.scala.md
 [test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/filterData.scala]: filterData.scala.md
+[main/scala/csvUtils.scala]: csvUtils.scala.md
+[main/scala/collectionUtils.scala]: collectionUtils.scala.md
+[main/scala/rnacentral/rnaCentral.scala]: rnacentral/rnaCentral.scala.md
+[main/scala/rnacentral/compats.scala]: rnacentral/compats.scala.md
+[main/scala/blastDB.scala]: blastDB.scala.md

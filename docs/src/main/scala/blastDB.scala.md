@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db
+package ohnosequences.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
@@ -104,10 +104,10 @@ class FilterAndGenerateBlastDB(
 
 
 
-[main/scala/blastDB.scala]: blastDB.scala.md
-[main/scala/collectionUtils.scala]: collectionUtils.scala.md
-[main/scala/csvUtils.scala]: csvUtils.scala.md
-[main/scala/filterData.scala]: filterData.scala.md
-[main/scala/rnacentral/compats.scala]: rnacentral/compats.scala.md
-[main/scala/rnacentral/rnaCentral.scala]: rnacentral/rnaCentral.scala.md
 [test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/filterData.scala]: filterData.scala.md
+[main/scala/csvUtils.scala]: csvUtils.scala.md
+[main/scala/collectionUtils.scala]: collectionUtils.scala.md
+[main/scala/rnacentral/rnaCentral.scala]: rnacentral/rnaCentral.scala.md
+[main/scala/rnacentral/compats.scala]: rnacentral/compats.scala.md
+[main/scala/blastDB.scala]: blastDB.scala.md
