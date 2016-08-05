@@ -9,8 +9,7 @@ scalaVersion := "2.11.8"
 bucketSuffix  := "era7.com"
 
 resolvers := Seq(
-  "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
-  "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
+  "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString)
 ) ++ resolvers.value
 
 libraryDependencies ++= Seq(
@@ -29,7 +28,6 @@ testOptions in Test += Tests.Argument("-oD")
 // disables parallel exec
 parallelExecution in Test := false
 
-// Uncomment this to publish fat-jar with bundles:
 fatArtifactSettings
 
 enablePlugins(BuildInfoPlugin)

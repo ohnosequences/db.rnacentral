@@ -5,7 +5,7 @@ case object collectionUtils {
 
   implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
 
-    /* Similar to .groupBy, by lazier: computes only one group at a time
+    /* Similar to .groupBy, but lazier: computes only one group at a time
        assuming that groups are not mixed */
     def group[K](key: T => K): Stream[(K, Stream[T])] = {
       if (s.isEmpty) Stream()
