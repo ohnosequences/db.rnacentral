@@ -1,5 +1,3 @@
-Nice.scalaProject
-
 name          := "db.rnacentral"
 organization  := "ohnosequences"
 description   := "Mirror and preprocessing of RNACentral data"
@@ -28,7 +26,7 @@ testOptions in Test += Tests.Argument("-oD")
 // disables parallel exec
 parallelExecution in Test := false
 
-fatArtifactSettings
+addFatArtifactPublishing(Test)
 
 enablePlugins(BuildInfoPlugin)
 buildInfoPackage := "generated.metadata.db"
