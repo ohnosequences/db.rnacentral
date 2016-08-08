@@ -1,4 +1,4 @@
-### RNA reference databases
+# db.rnacentral
 
 [![](https://travis-ci.org/ohnosequences/db.rnacentral.svg?branch=master)](https://travis-ci.org/ohnosequences/db.rnacentral)
 [![](https://img.shields.io/codacy/???.svg)](https://www.codacy.com/app/ohnosequences/db.rnacentral)
