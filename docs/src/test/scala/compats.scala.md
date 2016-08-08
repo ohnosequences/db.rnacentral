@@ -1,28 +1,25 @@
 
 ```scala
-package ohnosequences.db.rnacentral.test
+package ohnosequences.db.rnacentral
 
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
 
-import ohnosequences.db._
-import era7.defaults._
+case object compats {
 
-case object rnacentral {
+  class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int = 10
+```
 
-  // use `sbt test:console`:
-  // > ohnosequences.db.test.bundles.runBundle(...)
-  def runBundle[B <: AnyBundle](compat: ohnosequences.db.rnacentral.compats.DefaultCompatible[B], user: AWSUser): List[String] =
-    EC2.create(user.profile)
-      .runInstances(
-        amount = 1,
-        compat.instanceSpecs(
-          c3.large,
-          user.keypair.name,
-          Some(ec2Roles.projects.name)
-        )
-      )
-      .map { _.getInstanceId }
+G
+
+```scala
+) extends Compatible(
+    amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
+    bundle,
+    generated.metadata.db.rnacentral
+  )
+
+  case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.test.MirrorRNAcentral5)
 }
 
 ```
