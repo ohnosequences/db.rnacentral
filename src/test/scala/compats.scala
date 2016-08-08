@@ -11,5 +11,5 @@ case object compats {
     generated.metadata.db.rnacentral
   )
 
-  case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.MirrorRNAcentral5)
+  case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.test.MirrorRNAcentral5)
 }

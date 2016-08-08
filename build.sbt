@@ -22,6 +22,7 @@ libraryDependencies ++= Seq(
 )
 
 wartremoverErrors in (Test, compile) := Seq()
+wartremoverErrors in (Compile, compile) := Seq()
 
 // shows time for each test:
 testOptions in Test += Tests.Argument("-oD")
