@@ -27,9 +27,5 @@ testOptions in Test += Tests.Argument("-oD")
 // disables parallel exec
 parallelExecution in Test := false
 
-addFatArtifactPublishing(Test)
-
-enablePlugins(StatikaBundleSettings)
-buildInfoObject := normalizedName.value.split('-').mkString("_")
-
-sourceGenerators in Test += ohnosequences.sbt.nice.Release.generateTestTags.taskValue
+generateStatikaMetadataIn(Compile)
+addFatArtifactPublishingIn(Test)
