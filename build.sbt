@@ -17,8 +17,7 @@ libraryDependencies ++= Seq(
   "ohnosequences-bundles" %% "blast"     % "0.3.0",
   "com.github.tototoshi"  %% "scala-csv" % "1.2.2",
   // Test only:
-  "era7"          %% "defaults"  % "0.1.0" % Test,
-  "org.scalatest" %% "scalatest" % "2.2.6" % Test
+  "era7" %% "defaults" % "0.1.0" % Test
 )
 
 wartremoverErrors in (Test, compile) := Seq()
@@ -31,13 +30,4 @@ parallelExecution in Test := false
 
 addFatArtifactPublishing(Test)
 
-enablePlugins(BuildInfoPlugin)
-buildInfoPackage := "generated.metadata.db"
-buildInfoObject  := "rnacentral"
-buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
-buildInfoKeys    := Seq[BuildInfoKey](
-  organization,
-  version,
-  "artifact" -> name.value,
-  "artifactUrl" -> fatArtifactUrl.value
-)
+enablePlugins(StatikaBundleSettings)
