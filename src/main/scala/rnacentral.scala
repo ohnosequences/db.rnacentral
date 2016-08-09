@@ -21,7 +21,7 @@ import ohnosequences.db.rnacentral._
 
 abstract class AnyRNACentral(val version: String) {
 
-  val metadata = generated.metadata.db.rnacentral
+  val metadata = generated.metadata.db_rnacentral
 
   lazy val prefix = S3Folder("resources.ohnosequences.com", metadata.organization) /
     metadata.artifact /

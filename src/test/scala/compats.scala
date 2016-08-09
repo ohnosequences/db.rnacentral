@@ -8,7 +8,7 @@ case object compats {
   class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int = 10 /*G*/) extends Compatible(
     amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
     bundle,
-    generated.metadata.db.rnacentral
+    generated.metadata.db_rnacentral
   )
 
   case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.test.MirrorRNAcentral5)
