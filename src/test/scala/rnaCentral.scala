@@ -20,8 +20,6 @@ import ohnosequences.db.rnacentral._
   This bundle
 
   1. downloads all RNACentral raw files from the EBI ftp
-  2. creates other table file containing only the *active* sequences (those actually found in RNACentral)
-  3. creates a 2-column table with id to taxas mapping (only active ids)
   4. uploads everything to S3
 */
 class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
@@ -63,7 +61,7 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
         tableFile.toJava
       ).waitForCompletion
     } -&-
-    say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only table mapping")
+    say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix}")
   }
 }
 
