@@ -23,9 +23,8 @@ abstract class AnyRNACentral(val version: String) {
 
   val metadata = ohnosequences.generated.metadata.db_rnacentral
 
-  lazy val prefix = S3Folder("resources.ohnosequences.com", metadata.organization) /
-    metadata.artifact /
-    version / // of RNAcentral
+  lazy val prefix =
+    S3Folder("resources.ohnosequences.com", metadata.organization)/metadata.artifact/metadata.version/
 
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
