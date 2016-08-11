@@ -23,8 +23,6 @@ import ohnosequences.db.rnacentral._
 This bundle
 
 1. downloads all RNACentral raw files from the EBI ftp
-2. creates other table file containing only the *active* sequences (those actually found in RNACentral)
-3. creates a 2-column table with id to taxas mapping (only active ids)
 4. uploads everything to S3
 
 
@@ -61,14 +59,19 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
         rnaCentral.fasta.bucket, rnaCentral.fasta.key,
         fastaFile.toJava
       ).waitForCompletion
+      println("Uploaded fasta file.")
 
       // upload full table file
       transferManager.upload(
         rnaCentral.table.bucket, rnaCentral.table.key,
         tableFile.toJava
       ).waitForCompletion
+      println("Uploaded table file.")
+
+      transferManager.shutdownNow()
+      println("Shutdown the transfer manager.")
     } -&-
-    say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix} including active-only table mapping")
+    say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix}")
   }
 }
 
@@ -80,11 +83,12 @@ case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/rnaCentral.scala]: rnaCentral.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
-[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
-[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
-[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
 [main/scala/blastDB.scala]: ../../main/scala/blastDB.scala.md
+[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
+[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
+[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
+[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/generateData.scala]: generateData.scala.md
+[test/scala/rnaCentral.scala]: rnaCentral.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

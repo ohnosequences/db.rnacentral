@@ -23,11 +23,10 @@ import ohnosequences.db.rnacentral._
 
 abstract class AnyRNACentral(val version: String) {
 
-  val metadata = generated.metadata.db.rnacentral
+  val metadata = ohnosequences.generated.metadata.db_rnacentral
 
-  lazy val prefix = S3Folder("resources.ohnosequences.com", metadata.organization) /
-    metadata.artifact /
-    version / // of RNAcentral
+  lazy val prefix =
+    S3Folder("resources.ohnosequences.com", metadata.organization)/metadata.artifact/metadata.version/
 
   val fastaFileName:       String = s"rnacentral.${version}.fasta"
   val tableFileName:       String = s"table.${version}.tsv"
@@ -68,11 +67,12 @@ case object RNACentral5 extends AnyRNACentral("5.0") {
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[test/scala/rnaCentral.scala]: ../../test/scala/rnaCentral.scala.md
-[test/scala/compats.scala]: ../../test/scala/compats.scala.md
-[main/scala/filterData.scala]: filterData.scala.md
-[main/scala/csvUtils.scala]: csvUtils.scala.md
-[main/scala/collectionUtils.scala]: collectionUtils.scala.md
-[main/scala/rnacentral.scala]: rnacentral.scala.md
 [main/scala/blastDB.scala]: blastDB.scala.md
+[main/scala/collectionUtils.scala]: collectionUtils.scala.md
+[main/scala/csvUtils.scala]: csvUtils.scala.md
+[main/scala/filterData.scala]: filterData.scala.md
+[main/scala/rnacentral.scala]: rnacentral.scala.md
+[test/scala/compats.scala]: ../../test/scala/compats.scala.md
+[test/scala/generateData.scala]: ../../test/scala/generateData.scala.md
+[test/scala/rnaCentral.scala]: ../../test/scala/rnaCentral.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md

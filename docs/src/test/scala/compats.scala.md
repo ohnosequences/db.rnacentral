@@ -1,6 +1,6 @@
 
 ```scala
-package ohnosequences.db.rnacentral
+package ohnosequences.db.rnacentral.test
 
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
@@ -16,7 +16,7 @@ G
 ) extends Compatible(
     amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
     bundle,
-    generated.metadata.db.rnacentral
+    ohnosequences.generated.metadata.db_rnacentral
   )
 
   case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.test.MirrorRNAcentral5)
@@ -27,11 +27,12 @@ G
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/rnaCentral.scala]: rnaCentral.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
-[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
-[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
-[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
 [main/scala/blastDB.scala]: ../../main/scala/blastDB.scala.md
+[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
+[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
+[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
+[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/generateData.scala]: generateData.scala.md
+[test/scala/rnaCentral.scala]: rnaCentral.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

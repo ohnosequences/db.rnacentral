@@ -37,11 +37,12 @@ case class RowOps(row: csvUtils.Row) extends AnyVal {
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[test/scala/rnaCentral.scala]: ../../test/scala/rnaCentral.scala.md
-[test/scala/compats.scala]: ../../test/scala/compats.scala.md
-[main/scala/filterData.scala]: filterData.scala.md
-[main/scala/csvUtils.scala]: csvUtils.scala.md
-[main/scala/collectionUtils.scala]: collectionUtils.scala.md
-[main/scala/rnacentral.scala]: rnacentral.scala.md
 [main/scala/blastDB.scala]: blastDB.scala.md
+[main/scala/collectionUtils.scala]: collectionUtils.scala.md
+[main/scala/csvUtils.scala]: csvUtils.scala.md
+[main/scala/filterData.scala]: filterData.scala.md
+[main/scala/rnacentral.scala]: rnacentral.scala.md
+[test/scala/compats.scala]: ../../test/scala/compats.scala.md
+[test/scala/generateData.scala]: ../../test/scala/generateData.scala.md
+[test/scala/rnaCentral.scala]: ../../test/scala/rnaCentral.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md

@@ -10,19 +10,70 @@ import era7.defaults._
 
 case object rnacentral {
 
+  def defaultSpecs[B <: AnyBundle](
+    compat: compats.DefaultCompatible[B],
+    user: AWSUser
+  ) = compat.instanceSpecs(
+    c3.large,
+    user.keypair.name,
+    Some(ec2Roles.projects.name)
+  )
+
   // use `sbt test:console`:
   // > ohnosequences.db.test.bundles.runBundle(...)
-  def runBundle[B <: AnyBundle](compat: ohnosequences.db.rnacentral.compats.DefaultCompatible[B], user: AWSUser): List[String] =
+  def runBundle[B <: AnyBundle](
+    user: AWSUser,
+    compat: compats.DefaultCompatible[B]
+  ): Option[EC2#Instance] =
     EC2.create(user.profile)
-      .runInstances(
-        amount = 1,
-        compat.instanceSpecs(
-          c3.large,
-          user.keypair.name,
-          Some(ec2Roles.projects.name)
-        )
-      )
-      .map { _.getInstanceId }
+      .runInstances(1, defaultSpecs(compat, user))
+      .headOption
+```
+
+This runs a bundle
+
+```scala
+  def launchAndMonitor[B <: AnyBundle](
+    user: AWSUser,
+    compat: compats.DefaultCompatible[B],
+    terminateOnSuccess: Boolean
+  ): Either[String, String] = {
+
+    runBundle(user, compat).map { inst =>
+
+      def checkStatus: String = inst.getTagValue("statika-status").getOrElse("...")
+
+      val id = inst.getInstanceId()
+      def printStatus(st: String) = println(s"${compat.toString} (${id}): ${st}")
+
+      printStatus("launched")
+
+      while(checkStatus != "preparing") { Thread sleep 2000 }
+      printStatus("url: "+inst.getPublicDNS().getOrElse("..."))
+
+      @annotation.tailrec
+      def waitForCompletion(previous: String): String = {
+        val current = checkStatus
+        if(current == "failure" || current == "success") {
+          printStatus(current)
+          current
+        } else {
+          if (current != previous) printStatus(current)
+          Thread sleep 3000
+          waitForCompletion(current)
+        }
+      }
+
+      if (waitForCompletion(checkStatus) != "success") {
+        Left(s"Bundle launch has failed. Instance ${id} is left running for you to check logs.")
+      } else {
+        if (terminateOnSuccess) { inst.terminate() }
+        Right(s"Bundle launch finished successfully.")
+      }
+    }
+    .getOrElse(Left("Couldn't launch an instance. Check your AWS credentials."))
+  }
+
 }
 
 ```
@@ -30,11 +81,12 @@ case object rnacentral {
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/rnaCentral.scala]: rnaCentral.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
-[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
-[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
-[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
 [main/scala/blastDB.scala]: ../../main/scala/blastDB.scala.md
+[main/scala/collectionUtils.scala]: ../../main/scala/collectionUtils.scala.md
+[main/scala/csvUtils.scala]: ../../main/scala/csvUtils.scala.md
+[main/scala/filterData.scala]: ../../main/scala/filterData.scala.md
+[main/scala/rnacentral.scala]: ../../main/scala/rnacentral.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/generateData.scala]: generateData.scala.md
+[test/scala/rnaCentral.scala]: rnaCentral.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
