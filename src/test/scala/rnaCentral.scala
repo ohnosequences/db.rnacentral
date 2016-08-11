@@ -54,12 +54,17 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
         rnaCentral.fasta.bucket, rnaCentral.fasta.key,
         fastaFile.toJava
       ).waitForCompletion
+      println("Uploaded fasta file.")
 
       // upload full table file
       transferManager.upload(
         rnaCentral.table.bucket, rnaCentral.table.key,
         tableFile.toJava
       ).waitForCompletion
+      println("Uploaded table file.")
+
+      transferManager.shutdownNow()
+      println("Shutdown the transfer manager.")
     } -&-
     say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix}")
   }
