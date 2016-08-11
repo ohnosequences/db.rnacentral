@@ -6,6 +6,8 @@ scalaVersion := "2.11.8"
 
 bucketSuffix  := "era7.com"
 
+GithubRelease.repo := { organization.value +"/"+ name.value }
+
 resolvers := Seq(
   "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString)
 ) ++ resolvers.value
