@@ -158,6 +158,8 @@ abstract class FilterData(
         summary.file.toJava,
         false // don't includeSubdirectories
       ).waitForCompletion
+
+      transferManager.shutdownNow()
     } -&-
     say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")
   }
