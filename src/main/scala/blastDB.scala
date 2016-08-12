@@ -78,6 +78,8 @@ abstract class GenerateBlastDB(
         outputs.toJava,
         false // includeSubdirectories
       ).waitForCompletion
+
+      transferManager.shutdownNow()
     } -&-
     say(s"The database is uploaded to [${s3}]")
   }
