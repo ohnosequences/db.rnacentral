@@ -10,10 +10,8 @@
 This is a bundle for mirroring [RNAcentral](http://rnacentral.org/) database to S3:
 
 ```
-s3://resources.ohnosequences.com/ohnosequences/db.rnacentral/<RNAcental_version>/<release_version>/
+s3://resources.ohnosequences.com/ohnosequences/db-rnacentral/<release_version>/
 ```
-
-(check these versions on the badges)
 
 And also a library for building BLAST reference databases based on RNAcentral:
 
