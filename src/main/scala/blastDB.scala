@@ -61,7 +61,7 @@ abstract class GenerateBlastDB(
         optionValues =
           title(dbName) ::
           *[AnyDenotation]
-      ).toSeq
+      ).toSeq ++ Seq("-parse_seqids") // TODO use blast-api after updating
     ) -&-
     LazyTry {
       println("Uploading the DB...")
