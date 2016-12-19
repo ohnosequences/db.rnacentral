@@ -44,7 +44,7 @@ abstract class FilterData(
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val stream: Stream[FASTA.Value] = parseFastaDropErrors(this.file.lines).toStream
+      lazy val stream: Stream[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors().toStream
     }
   }
 
@@ -113,7 +113,7 @@ abstract class FilterData(
 
   def instructions: AnyInstructions = {
 
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     LazyTry {
       println(s"""Downloading the sources...

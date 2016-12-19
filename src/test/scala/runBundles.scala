@@ -1,10 +1,10 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
 
 import ohnosequences.db._
-import era7.defaults._
+import era7bio.defaults._
 
 case object rnacentral {
 
@@ -22,10 +22,11 @@ case object rnacentral {
   def runBundle[B <: AnyBundle](
     user: AWSUser,
     compat: compats.DefaultCompatible[B]
-  ): Option[EC2#Instance] =
-    EC2.create(user.profile)
-      .runInstances(1, defaultSpecs(compat, user))
-      .headOption
+  ): Option[Instance] =
+    EC2Client(credentials = user.profile)
+      .runInstances(defaultSpecs(compat, user))(1)
+      .toOption
+      .flatMap { _.headOption }
 
   /* This runs a bundle  */
   def launchAndMonitor[B <: AnyBundle](

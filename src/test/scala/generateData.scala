@@ -1,7 +1,7 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.test._
-import era7.defaults._
+import era7bio.defaults._
 
 class GenerateDataTests extends org.scalatest.FunSuite {
 
