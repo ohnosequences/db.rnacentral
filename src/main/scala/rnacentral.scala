@@ -6,7 +6,7 @@
 package ohnosequences.db.rnacentral
 
 import ohnosequences.cosas._, types._, records._, klists._
-import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
 import ohnosequences.statika._, aws._
 import ohnosequences.fastarious._, fasta._
 
@@ -21,7 +21,7 @@ import ohnosequences.db.rnacentral._
 
 abstract class AnyRNACentral(val version: String) {
 
-  val metadata = ohnosequences.generated.metadata.db_rnacentral
+  val metadata = ohnosequences.db.generated.metadata.rnacentral
 
   lazy val prefix =
     S3Folder("resources.ohnosequences.com", metadata.organization)/metadata.artifact/metadata.version/
