@@ -3,7 +3,7 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.cosas._, types._, records._, klists._
-import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
 import ohnosequences.statika._, aws._
 import ohnosequences.fastarious._, fasta._
 
@@ -52,7 +52,7 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
     cmd("gzip")("-d", s"${tableFile.name}.gz") -&-
     LazyTry {
       println("Uploading uncompressed data...")
-      val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+      val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
       // upload the uncompressed fasta file
       transferManager.upload(

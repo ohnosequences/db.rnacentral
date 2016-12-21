@@ -3,10 +3,11 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
-
+import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import com.amazonaws.services.ec2.model.{ Instance => _ , _ }
+import scala.collection.JavaConversions._
 import ohnosequences.db._
-import era7.defaults._
+import era7bio.defaults._
 
 case object rnacentral {
 
@@ -24,10 +25,11 @@ case object rnacentral {
   def runBundle[B <: AnyBundle](
     user: AWSUser,
     compat: compats.DefaultCompatible[B]
-  ): Option[EC2#Instance] =
-    EC2.create(user.profile)
-      .runInstances(1, defaultSpecs(compat, user))
-      .headOption
+  ): Option[Instance] =
+    EC2Client(credentials = user.profile)
+      .runInstances(defaultSpecs(compat, user))(1)
+      .toOption
+      .flatMap { _.headOption }
 ```
 
 This runs a bundle
@@ -41,7 +43,16 @@ This runs a bundle
 
     runBundle(user, compat).map { inst =>
 
-      def checkStatus: String = inst.getTagValue("statika-status").getOrElse("...")
+      def checkStatus: String = inst.ec2.describeTags(
+        new DescribeTagsRequest(List(
+          new Filter("resource-type", List("instance")),
+          new Filter("resource-id", List(inst.id)),
+          new Filter("key", List("statika-status"))
+        ))
+      ).getTags
+        .headOption
+        .map { _.getValue }
+        .getOrElse("...")
 
       val id = inst.getInstanceId()
       def printStatus(st: String) = println(s"${compat.toString} (${id}): ${st}")
@@ -49,7 +60,7 @@ This runs a bundle
       printStatus("launched")
 
       while(checkStatus != "preparing") { Thread sleep 2000 }
-      printStatus("url: "+inst.getPublicDNS().getOrElse("..."))
+      printStatus(s"url: ${inst.publicDNS}")
 
       @annotation.tailrec
       def waitForCompletion(previous: String): String = {
@@ -67,7 +78,7 @@ This runs a bundle
       if (waitForCompletion(checkStatus) != "success") {
         Left(s"Bundle launch has failed. Instance ${id} is left running for you to check logs.")
       } else {
-        if (terminateOnSuccess) { inst.terminate() }
+        if (terminateOnSuccess) { inst.terminate }
         Right(s"Bundle launch finished successfully.")
       }
     }

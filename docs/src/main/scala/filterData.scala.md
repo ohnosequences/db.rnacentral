@@ -50,7 +50,7 @@ Source folder provides ways to read the table and stream FASTA
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val stream: Stream[FASTA.Value] = parseFastaDropErrors(this.file.lines).toStream
+      lazy val stream: Stream[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors().toStream
     }
   }
 ```
@@ -128,7 +128,7 @@ It should refer to the folders/files defined above.
 
   def instructions: AnyInstructions = {
 
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     LazyTry {
       println(s"""Downloading the sources...
@@ -173,6 +173,8 @@ It should refer to the folders/files defined above.
         summary.file.toJava,
         false // don't includeSubdirectories
       ).waitForCompletion
+
+      transferManager.shutdownNow()
     } -&-
     say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")
   }

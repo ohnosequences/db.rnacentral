@@ -2,24 +2,24 @@
 ```scala
 package ohnosequences.db.rnacentral.test
 
-import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import ohnosequences.test._
+import era7bio.defaults._
 
-case object compats {
+class GenerateDataTests extends org.scalatest.FunSuite {
 
-  class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int = 10
-```
+  val user = awsUsers.aalekhin
 
-G
+  test("Run RNAcentral mirroring and wait for the result", ReleaseOnlyTest) {
 
-```scala
-) extends Compatible(
-    amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
-    bundle,
-    ohnosequences.db.generated.metadata.rnacentral
-  )
-
-  case object MirrorRNAcentral5 extends DefaultCompatible(ohnosequences.db.rnacentral.test.MirrorRNAcentral5)
+    rnacentral.launchAndMonitor(
+      user,
+      compats.MirrorRNAcentral5,
+      terminateOnSuccess = true
+    ).fold(
+      { msg => fail(msg) },
+      { msg => info(msg); assert(true) }
+    )
+  }
 }
 
 ```

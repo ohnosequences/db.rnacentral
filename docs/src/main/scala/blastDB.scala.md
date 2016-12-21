@@ -41,7 +41,7 @@ abstract class GenerateBlastDB(
 
   def instructions: AnyInstructions = {
 
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     LazyTry {
       println(s"""Downloading the sources...
@@ -58,7 +58,7 @@ abstract class GenerateBlastDB(
     seqToInstructions(
       makeblastdb(
         argumentValues =
-          in(sourceFastaFile) ::
+          in(sourceFastaFile.toJava) ::
           input_type(DBInputType.fasta) ::
           dbtype(dbType) ::
           *[AnyDenotation],
@@ -82,6 +82,8 @@ abstract class GenerateBlastDB(
         outputs.toJava,
         false // includeSubdirectories
       ).waitForCompletion
+
+      transferManager.shutdownNow()
     } -&-
     say(s"The database is uploaded to [${s3}]")
   }
