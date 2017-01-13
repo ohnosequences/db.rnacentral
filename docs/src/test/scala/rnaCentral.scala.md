@@ -27,7 +27,7 @@ This bundle
 
 
 ```scala
-class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
+class MirrorRNAcentral[R <: AnyRNAcentral](r: R) extends Bundle() {
 
   type RNACentral = R
   val rnaCentral: RNACentral = r
@@ -76,7 +76,7 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 }
 
 // bundle:
-case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
+case object MirrorRNAcentral extends MirrorRNAcentral(RNAcentral)
 
 ```
 
