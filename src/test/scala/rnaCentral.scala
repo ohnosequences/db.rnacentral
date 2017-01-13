@@ -22,7 +22,7 @@ import ohnosequences.db.rnacentral._
   1. downloads all RNACentral raw files from the EBI ftp
   4. uploads everything to S3
 */
-class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
+class MirrorRNAcentral[R <: AnyRNAcentral](r: R) extends Bundle() {
 
   type RNACentral = R
   val rnaCentral: RNACentral = r
@@ -71,4 +71,4 @@ class MirrorRNAcentral[R <: AnyRNACentral](r: R) extends Bundle() {
 }
 
 // bundle:
-case object MirrorRNAcentral5 extends MirrorRNAcentral(RNACentral5)
+case object MirrorRNAcentral extends MirrorRNAcentral(RNAcentral)
