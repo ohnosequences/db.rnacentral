@@ -3,20 +3,6 @@ package ohnosequences.db
 /* This object contains some generic collections ops that can be useful for filtering */
 case object collectionUtils {
 
-  // implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
-  //
-  //   /* Similar to .groupBy, but lazier: computes only one group at a time
-  //      assuming that groups are not mixed */
-  //   def group[K](key: T => K): Stream[(K, Stream[T])] = {
-  //     if (s.isEmpty) Stream()
-  //     else {
-  //       val k = key(s.head)
-  //       val (prefix, suffix) = s.span { key(_) == k }
-  //       (k -> prefix) #:: suffix.group(key)
-  //     }
-  //   }
-  // }
-
   implicit class IteratorOps[V](val iterator: Iterator[V]) extends AnyVal {
 
     /* Similar to the Stream's .groupBy, but assuming that groups are contiguous. Another difference is that it returns the key corresponding to each group. */
