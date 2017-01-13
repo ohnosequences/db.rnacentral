@@ -35,7 +35,7 @@ abstract class AnyRNAcentral(val version: String) {
   lazy val table: S3Object = prefix / tableFileName
 }
 
-case object RNAcentral extends AnyRNAcentral("5.0") {
+case object RNAcentral extends AnyRNAcentral("6.0") {
 
   sealed trait Field extends AnyType {
     type Raw = String
