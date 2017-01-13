@@ -65,7 +65,7 @@ abstract class GenerateBlastDB(
         optionValues =
           title(dbName) ::
           *[AnyDenotation]
-      ).toSeq
+      ).toSeq ++ Seq("-parse_seqids") // TODO use blast-api after updating
     ) -&-
     LazyTry {
       println("Uploading the DB...")
@@ -92,11 +92,10 @@ abstract class GenerateBlastDB(
 
 class FilterAndGenerateBlastDB(
   dbName: String,
-  dbType: BlastDBType,
   filterData: FilterData
 ) extends GenerateBlastDB(
   dbName,
-  dbType,
+  dbType        = BlastDBType.nucl,
   sourceFastaS3 = filterData.output.fasta.s3,
   s3prefix      = filterData.s3
 )(deps = filterData)

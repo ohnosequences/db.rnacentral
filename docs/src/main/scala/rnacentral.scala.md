@@ -21,21 +21,23 @@ import com.github.tototoshi.csv._
 import ohnosequences.db.csvUtils._
 import ohnosequences.db.rnacentral._
 
-abstract class AnyRNACentral(val version: String) {
+abstract class AnyRNAcentral(val version: String) {
 
   val metadata = ohnosequences.db.generated.metadata.rnacentral
 
-  lazy val prefix =
-    S3Folder("resources.ohnosequences.com", metadata.organization)/metadata.artifact/metadata.version/
+  lazy val prefix = s3"resources.ohnosequences.com" /
+    metadata.organization /
+    metadata.artifact /
+    metadata.version /
 
-  val fastaFileName:       String = s"rnacentral.${version}.fasta"
-  val tableFileName:       String = s"table.${version}.tsv"
+  val fastaFileName: String = s"rnacentral.${version}.fasta"
+  val tableFileName: String = s"table.${version}.tsv"
 
-  lazy val fasta:       S3Object = prefix/fastaFileName
-  lazy val table:       S3Object = prefix/tableFileName
+  lazy val fasta: S3Object = prefix / fastaFileName
+  lazy val table: S3Object = prefix / tableFileName
 }
 
-case object RNACentral5 extends AnyRNACentral("5.0") {
+case object RNAcentral extends AnyRNAcentral("6.0") {
 
   sealed trait Field extends AnyType {
     type Raw = String

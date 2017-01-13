@@ -13,7 +13,7 @@ class GenerateDataTests extends org.scalatest.FunSuite {
 
     rnacentral.launchAndMonitor(
       user,
-      compats.MirrorRNAcentral5,
+      compats.MirrorRNAcentral,
       terminateOnSuccess = true
     ).fold(
       { msg => fail(msg) },

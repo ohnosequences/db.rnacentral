@@ -34,7 +34,7 @@ abstract class FilterData(
 ```
 
 Each folder has two files inside
-Source folder provides ways to read the table and stream FASTA
+Source folder provides ways to read the table and parse FASTA
 
 ```scala
   case object source { folder =>
@@ -50,7 +50,7 @@ Source folder provides ways to read the table and stream FASTA
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val stream: Stream[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors().toStream
+      lazy val parsed: Iterator[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors()
     }
   }
 ```

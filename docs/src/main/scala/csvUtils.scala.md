@@ -25,7 +25,7 @@ case object csvUtils {
 }
 
 case class RowOps(row: csvUtils.Row) extends AnyVal {
-  import csvUtils._, rnacentral.RNACentral5._
+  import csvUtils._, rnacentral.RNAcentral._
 
   def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
 
