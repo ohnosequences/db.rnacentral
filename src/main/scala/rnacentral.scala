@@ -5,19 +5,8 @@
 */
 package ohnosequences.db.rnacentral
 
-import ohnosequences.cosas._, types._, records._, klists._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
-import ohnosequences.statika._, aws._
-import ohnosequences.fastarious._, fasta._
-
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-
-import better.files._
-
-import com.github.tototoshi.csv._
-import ohnosequences.db.csvUtils._
-import ohnosequences.db.rnacentral._
+import ohnosequences.cosas._, types._, records._
+import ohnosequences.awstools._, s3._
 
 abstract class AnyRNAcentral(val version: String) {
 

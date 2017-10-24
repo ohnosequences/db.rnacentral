@@ -3,13 +3,8 @@ package ohnosequences.db
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
 import ohnosequences.blast.api._
-import ohnosequences.awstools.s3._
-
+import ohnosequences.awstools._, s3._
 import ohnosequencesBundles.statika.Blast
-
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-
 import better.files._
 
 
@@ -28,7 +23,7 @@ abstract class GenerateBlastDB(
 )(deps: AnyBundle*) extends Bundle(blastBundle +: deps.toSeq: _*) {
 
   // where the generated files will be uploaded
-  final lazy val s3: S3Folder = s3prefix / "blastdb" /
+  final lazy val s3destination: S3Folder = s3prefix / "blastdb" /
 
   lazy val sources = file"sources/"
   lazy val outputs = file"outputs/"
@@ -36,19 +31,16 @@ abstract class GenerateBlastDB(
   lazy val sourceFastaFile: File = sources / s"${dbName}.fasta"
 
   def instructions: AnyInstructions = {
-
-    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
+    lazy val s3client = s3.defaultClient
 
     LazyTry {
       println(s"""Downloading the sources...
         |fasta: ${sourceFastaS3}
-        |""".stripMargin)
+        |""".stripMargin
+      )
+      s3client.download(sourceFastaS3, sourceFastaFile.toJava)
 
-      transferManager.download(
-        sourceFastaS3.bucket, sourceFastaS3.key,
-        sourceFastaFile.toJava
-      ).waitForCompletion
-
+      outputs.createDirectory()
       println("Generating BLAST DB...")
     } -&-
     seqToInstructions(
@@ -57,31 +49,20 @@ abstract class GenerateBlastDB(
           in(sourceFastaFile.toJava) ::
           input_type(DBInputType.fasta) ::
           dbtype(dbType) ::
+          out(outputs.toJava) ::
           *[AnyDenotation],
-        optionValues =
+        optionValues = makeblastdb.defaults.update(
           title(dbName) ::
+          parse_seqids(true) ::
           *[AnyDenotation]
-      ).toSeq ++ Seq("-parse_seqids") // TODO use blast-api after updating
+        ).value
+      ).toSeq
     ) -&-
     LazyTry {
       println("Uploading the DB...")
-
-      // Moving blast DB files to the outputs/ folder
-      outputs.createDirectory()
-      sources.list
-        .filter { _.name.startsWith(sourceFastaFile.name + ".") }
-        .foreach { f => f.moveTo(outputs / f.name) }
-
-      // Uploading outputs
-      transferManager.uploadDirectory(
-        s3.bucket, s3.key,
-        outputs.toJava,
-        false // includeSubdirectories
-      ).waitForCompletion
-
-      transferManager.shutdownNow()
+      s3client.upload(outputs.toJava, s3destination)
     } -&-
-    say(s"The database is uploaded to [${s3}]")
+    say(s"The database is uploaded to [${s3destination}]")
   }
 
 }
@@ -93,5 +74,5 @@ class FilterAndGenerateBlastDB(
   dbName,
   dbType        = BlastDBType.nucl,
   sourceFastaS3 = filterData.output.fasta.s3,
-  s3prefix      = filterData.s3
+  s3prefix      = filterData.s3destination
 )(deps = filterData)

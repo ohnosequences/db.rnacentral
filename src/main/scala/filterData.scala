@@ -1,13 +1,8 @@
 package ohnosequences.db
 
-import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
-import ohnosequences.awstools.s3._
+import ohnosequences.awstools._, s3._
 import ohnosequences.fastarious.fasta._
-
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-
 import com.github.tototoshi.csv._
 import better.files._
 
@@ -24,7 +19,7 @@ abstract class FilterData(
 
   lazy val name: String = toString
 
-  final lazy val s3: S3Folder = s3prefix / name /
+  final lazy val s3destination: S3Folder = s3prefix / name /
   final lazy val tableName: String = name + ".csv"
   final lazy val fastaName: String = name + ".fasta"
 
@@ -44,14 +39,14 @@ abstract class FilterData(
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val parsed: Iterator[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors()
+      lazy val parsed: Iterator[FASTA] = this.file.lineIterator.buffered.parseFastaSkipCrap
     }
   }
 
   /* Output folder knows how to write to the files and where they will be uploaded */
   case object output { folder =>
     lazy val file: File   = File(folder.toString).createDirectories()
-    lazy val s3: S3Folder = filter.s3 / folder.toString /
+    lazy val s3: S3Folder = filter.s3destination / folder.toString /
 
     case object table {
       lazy val file: File   = (folder.file / tableName).createIfNotExists()
@@ -67,14 +62,14 @@ abstract class FilterData(
       lazy val file: File = (folder.file / fastaName).createIfNotExists()
       lazy val s3: S3Object = folder.s3 / fastaName
 
-      def add(fasta: FASTA.Value): Unit = file.appendLine(fasta.asString)
+      def add(fasta: FASTA): Unit = file.appendLine(fasta.asString)
     }
   }
 
   /* Summary folder contains a table with all accepted/rejected assignments after this filter */
   case object summary { folder =>
     lazy val file: File   = File(folder.toString).createDirectories()
-    lazy val s3: S3Folder = filter.s3 / folder.toString /
+    lazy val s3: S3Folder = filter.s3destination / folder.toString /
 
     case object table {
       lazy val file: File   = (folder.file / tableName).createIfNotExists()
@@ -96,7 +91,7 @@ abstract class FilterData(
     id: String,
     acceptedTaxas: Seq[String],
     rejectedTaxas: Seq[String],
-    fasta: FASTA.Value
+    fasta: FASTA
   ) = {
     summary.table.add(id, acceptedTaxas, rejectedTaxas)
 
@@ -112,24 +107,16 @@ abstract class FilterData(
 
 
   def instructions: AnyInstructions = {
-
-    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
+    lazy val s3client = s3.defaultClient
 
     LazyTry {
       println(s"""Downloading the sources...
         |table: ${sourceTableS3}
         |fasta: ${sourceFastaS3}
-        |""".stripMargin)
-
-      transferManager.download(
-        sourceTableS3.bucket, sourceTableS3.key,
-        source.table.file.toJava
-      ).waitForCompletion
-
-      transferManager.download(
-        sourceFastaS3.bucket, sourceFastaS3.key,
-        source.fasta.file.toJava
-      ).waitForCompletion
+        |""".stripMargin
+      )
+      s3client.download(sourceTableS3, source.table.file.toJava)
+      s3client.download(sourceFastaS3, source.fasta.file.toJava)
     } -&-
     LazyTry {
       println("Filtering the data...")
@@ -146,20 +133,8 @@ abstract class FilterData(
     } -&-
     LazyTry {
       println("Uploading the results...")
-
-      transferManager.uploadDirectory(
-        output.s3.bucket, output.s3.key,
-        output.file.toJava,
-        false // don't includeSubdirectories
-      ).waitForCompletion
-
-      transferManager.uploadDirectory(
-        summary.s3.bucket, summary.s3.key,
-        summary.file.toJava,
-        false // don't includeSubdirectories
-      ).waitForCompletion
-
-      transferManager.shutdownNow()
+      s3client.upload(output.file.toJava, output.s3)
+      s3client.upload(summary.file.toJava, summary.s3)
     } -&-
     say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")
   }

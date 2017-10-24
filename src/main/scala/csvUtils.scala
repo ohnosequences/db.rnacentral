@@ -1,7 +1,5 @@
 package ohnosequences.db
 
-import better.files._
-
 case object csvUtils {
 
   import com.github.tototoshi.csv._
@@ -23,7 +21,7 @@ case object csvUtils {
 }
 
 case class RowOps(row: csvUtils.Row) extends AnyVal {
-  import csvUtils._, rnacentral.RNAcentral._
+  import rnacentral.RNAcentral._
 
   def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
 

@@ -1,10 +1,9 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import ohnosequences.awstools._, ec2._
 import com.amazonaws.services.ec2.model.{ Instance => _ , _ }
-import scala.collection.JavaConversions._
-import ohnosequences.db._
+import scala.collection.JavaConverters._
 import era7bio.defaults._
 
 case object rnacentral {
@@ -40,11 +39,11 @@ case object rnacentral {
 
       def checkStatus: String = inst.ec2.describeTags(
         new DescribeTagsRequest(List(
-          new Filter("resource-type", List("instance")),
-          new Filter("resource-id", List(inst.id)),
-          new Filter("key", List("statika-status"))
-        ))
-      ).getTags
+          new Filter("resource-type", List("instance").asJava),
+          new Filter("resource-id", List(inst.id).asJava),
+          new Filter("key", List("statika-status").asJava)
+        ).asJava)
+      ).getTags.asScala
         .headOption
         .map { _.getValue }
         .getOrElse("...")
