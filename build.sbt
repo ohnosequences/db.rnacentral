@@ -23,12 +23,14 @@ libraryDependencies ++= Seq(
     }
   },
   // Test only:
-  "era7bio" %% "defaults" % "0.3.0-RC3" % Test
+  "era7bio" %% "defaults" % "0.3.0-RC3" % Test,
+  "org.scalatest" %% "scalatest" % "3.0.4" % Test
 )
 
 dependencyOverrides ++= Seq(
   // scala-csv is bound to scala 2.12.2, check this after updating scala-logging
-  "org.scala-lang" % "scala-library" % scalaVersion.value
+  "org.scala-lang" % "scala-library" % scalaVersion.value,
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value
 )
 
 wartremoverErrors in (Test, compile) := Seq()

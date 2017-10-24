@@ -1,17 +1,9 @@
 package ohnosequences.db.rnacentral.test
 
-import ohnosequences.cosas._, types._, records._, klists._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import ohnosequences.cosas._, records._
 import ohnosequences.statika._, aws._
-import ohnosequences.fastarious._, fasta._
-
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-
+import ohnosequences.awstools._, s3._
 import better.files._
-
-import com.github.tototoshi.csv._
-import ohnosequences.db.csvUtils._
 import ohnosequences.db.rnacentral._
 
 /*
@@ -47,23 +39,16 @@ class MirrorRNAcentral[R <: AnyRNAcentral](r: R) extends Bundle() {
     cmd("gzip")("-d", s"${tableFile.name}.gz") -&-
     LazyTry {
       println("Uploading uncompressed data...")
-      val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
+      lazy val s3client = s3.defaultClient
 
       // upload the uncompressed fasta file
-      transferManager.upload(
-        rnaCentral.fasta.bucket, rnaCentral.fasta.key,
-        fastaFile.toJava
-      ).waitForCompletion
+      s3client.upload(fastaFile.toJava, rnaCentral.fasta)
       println("Uploaded fasta file.")
 
       // upload full table file
-      transferManager.upload(
-        rnaCentral.table.bucket, rnaCentral.table.key,
-        tableFile.toJava
-      ).waitForCompletion
+      s3client.upload(tableFile.toJava, rnaCentral.table)
       println("Uploaded table file.")
 
-      transferManager.shutdownNow()
       println("Shutdown the transfer manager.")
     } -&-
     say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix}")
