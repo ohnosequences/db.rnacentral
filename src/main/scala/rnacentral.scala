@@ -7,7 +7,7 @@ package ohnosequences.db.rnacentral
 
 import ohnosequences.cosas._, types._, records._, klists._
 import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
-import ohnosequences.statika._, aws._
+import ohnosequences.statika._
 import ohnosequences.fastarious._, fasta._
 
 import com.amazonaws.auth._

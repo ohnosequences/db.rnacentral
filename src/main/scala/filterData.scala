@@ -44,7 +44,7 @@ abstract class FilterData(
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val parsed: Iterator[FASTA.Value] = this.file.lineIterator.buffered.parseFastaDropErrors()
+      lazy val parsed: Iterator[FASTA] = this.file.lineIterator.buffered.parseFastaSkipCrap
     }
   }
 
@@ -67,7 +67,7 @@ abstract class FilterData(
       lazy val file: File = (folder.file / fastaName).createIfNotExists()
       lazy val s3: S3Object = folder.s3 / fastaName
 
-      def add(fasta: FASTA.Value): Unit = file.appendLine(fasta.asString)
+      def add(fasta: FASTA): Unit = file.appendLine(fasta.asString)
     }
   }
 
@@ -96,7 +96,7 @@ abstract class FilterData(
     id: String,
     acceptedTaxas: Seq[String],
     rejectedTaxas: Seq[String],
-    fasta: FASTA.Value
+    fasta: FASTA
   ) = {
     summary.table.add(id, acceptedTaxas, rejectedTaxas)
 

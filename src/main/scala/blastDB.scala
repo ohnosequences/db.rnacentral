@@ -57,11 +57,14 @@ abstract class GenerateBlastDB(
           in(sourceFastaFile.toJava) ::
           input_type(DBInputType.fasta) ::
           dbtype(dbType) ::
+          out(???) :: // FIXME!
           *[AnyDenotation],
-        optionValues =
+        optionValues = makeblastdb.defaults.update(
           title(dbName) ::
+          parse_seqids(true) ::
           *[AnyDenotation]
-      ).toSeq ++ Seq("-parse_seqids") // TODO use blast-api after updating
+        ).value
+      ).toSeq
     ) -&-
     LazyTry {
       println("Uploading the DB...")
