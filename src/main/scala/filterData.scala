@@ -1,6 +1,5 @@
 package ohnosequences.db
 
-import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
 import ohnosequences.awstools._, s3._
 import ohnosequences.fastarious.fasta._
