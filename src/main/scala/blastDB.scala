@@ -74,5 +74,5 @@ class FilterAndGenerateBlastDB(
   dbName,
   dbType        = BlastDBType.nucl,
   sourceFastaS3 = filterData.output.fasta.s3,
-  s3prefix      = filterData.s3
+  s3prefix      = filterData.s3destination
 )(deps = filterData)
