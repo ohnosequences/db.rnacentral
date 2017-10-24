@@ -5,8 +5,25 @@
 */
 package ohnosequences.db.rnacentral
 
+import ohnosequences.db.Row
 import ohnosequences.cosas._, types._, records._
 import ohnosequences.awstools._, s3._
+
+sealed trait RNAcentralField extends AnyType {
+  type Raw = String
+  lazy val label = toString
+}
+
+case object RNAcentralField {
+
+  case object id          extends RNAcentralField
+  case object db          extends RNAcentralField
+  case object external_id extends RNAcentralField
+  case object tax_id      extends RNAcentralField
+  // TODO use http://www.insdc.org/rna_vocab.html
+  case object rna_type    extends RNAcentralField
+  case object gene_name   extends RNAcentralField
+}
 
 abstract class AnyRNAcentral(val version: String) {
 
@@ -24,21 +41,8 @@ abstract class AnyRNAcentral(val version: String) {
   lazy val table: S3Object = prefix / tableFileName
 }
 
-case object RNAcentral extends AnyRNAcentral("6.0") {
-
-  sealed trait Field extends AnyType {
-    type Raw = String
-    lazy val label = toString
-  }
-
-  case object id          extends Field
-  case object db          extends Field
-  case object external_id extends Field
-  case object tax_id      extends Field
-  // TODO use http://www.insdc.org/rna_vocab.html
-  case object rna_type    extends Field
-  case object gene_name   extends Field
-
+case object RNAcentral6 extends AnyRNAcentral("6.0") {
+  import RNAcentralField._
 
   case object Id2Taxa extends RecordType(
     id          :×:
@@ -47,6 +51,23 @@ case object RNAcentral extends AnyRNAcentral("6.0") {
     tax_id      :×:
     rna_type    :×:
     gene_name   :×:
-    |[Field]
+    |[RNAcentralField]
   )
+
+  def row(fields: Seq[String]): Row = Row(Id2Taxa.keys.types.asList, fields)
+}
+
+case object RNAcentral7 extends AnyRNAcentral("7.0") {
+  import RNAcentralField._
+
+  case object Id2Taxa extends RecordType(
+    id          :×:
+    db          :×:
+    external_id :×:
+    tax_id      :×:
+    rna_type    :×:
+    |[RNAcentralField]
+  )
+
+  def row(fields: Seq[String]): Row = Row(Id2Taxa.keys.types.asList, fields)
 }

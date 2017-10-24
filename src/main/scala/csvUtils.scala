@@ -1,5 +1,7 @@
 package ohnosequences.db
 
+import rnacentral.RNAcentralField
+
 case object csvUtils {
 
   import com.github.tototoshi.csv._
@@ -14,16 +16,14 @@ case object csvUtils {
   case object UnixCSVFormat extends DefaultCSVFormat {
     override val lineTerminator: String = "\n"
   }
-
-  type Row = Seq[String]
-
-  implicit def rowOps(row: Row): RowOps = RowOps(row)
 }
 
-case class RowOps(row: csvUtils.Row) extends AnyVal {
-  import rnacentral.RNAcentral._
+case class Row(
+  fields: List[RNAcentralField],
+  values: Seq[String]
+) {
 
-  def toMap: Map[Field, String] = Id2Taxa.keys.types.asList.zip(row).toMap
+  def toMap: Map[RNAcentralField, String] = fields.zip(values).toMap
 
-  def select(field: Field): String = this.toMap.apply(field)
+  def select(field: RNAcentralField): String = this.toMap.apply(field)
 }
