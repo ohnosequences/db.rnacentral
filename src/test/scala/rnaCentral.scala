@@ -56,4 +56,5 @@ class MirrorRNAcentral[R <: AnyRNAcentral](r: R) extends Bundle() {
 }
 
 // bundle:
-case object MirrorRNAcentral extends MirrorRNAcentral(RNAcentral)
+case object MirrorRNAcentral6 extends MirrorRNAcentral(RNAcentral6)
+case object MirrorRNAcentral7 extends MirrorRNAcentral(RNAcentral7)
