@@ -1,1 +1,1 @@
-* #31: Updated to RNAcentral v7
+* #30: Updated to RNAcentral v7
