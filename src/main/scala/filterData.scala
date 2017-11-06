@@ -135,6 +135,7 @@ abstract class FilterData(
       println("Uploading the results...")
       s3client.upload(output.file.toJava, output.s3)
       s3client.upload(summary.file.toJava, summary.s3)
+      s3client.shutdown()
     } -&-
     say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")
   }
