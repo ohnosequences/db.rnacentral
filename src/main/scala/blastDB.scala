@@ -49,7 +49,7 @@ abstract class GenerateBlastDB(
           in(sourceFastaFile.toJava) ::
           input_type(DBInputType.fasta) ::
           dbtype(dbType) ::
-          out(outputs.toJava) ::
+          out((outputs / sourceFastaFile.name).toJava) ::
           *[AnyDenotation],
         optionValues = makeblastdb.defaults.update(
           title(dbName) ::
