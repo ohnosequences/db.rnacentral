@@ -6,7 +6,7 @@ import ohnosequences.fastarious.fasta._
 import com.github.tototoshi.csv._
 import better.files._
 import java.nio.file.Files
-
+import scala.collection.JavaConverters._
 
 /* Each filtering bundle is defined by its input data, two output S3 folders and the filtering method.
    It downloads the sources, filters and uploads two kinds of results: accepted and rejected data.
@@ -117,8 +117,8 @@ abstract class FilterData(
         |fasta: ${sourceFastaS3}
         |""".stripMargin
       )
-      s3client.download(sourceTableS3, source.table.file.toJava)
-      s3client.download(sourceFastaS3, source.fasta.file.toJava)
+      s3client.download(sourceTableS3, source.table.file.toJava).get
+      s3client.download(sourceFastaS3, source.fasta.file.toJava).get
     } -&-
     LazyTry {
       println("Filtering the data...")
@@ -135,8 +135,8 @@ abstract class FilterData(
     } -&-
     LazyTry {
       println("Uploading the results...")
-      s3client.upload(output.file.toJava, output.s3)
-      s3client.upload(summary.file.toJava, summary.s3)
+      s3client.upload(output.file.toJava, output.s3).get
+      s3client.upload(summary.file.toJava, summary.s3).get
       s3client.shutdown()
     } -&-
     say(s"Filtered data is uploaded to [${output.s3}] and [${summary.s3}]")

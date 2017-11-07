@@ -26,7 +26,7 @@ abstract class GenerateBlastDB(
   final lazy val s3destination: S3Folder = s3prefix / "blastdb" /
 
   lazy val sources = file"sources/"
-  lazy val outputs = file"outputs/"
+  lazy val blastdb = file"blastdb/"
 
   lazy val sourceFastaFile: File = sources / s"${dbName}.fasta"
 
@@ -38,9 +38,9 @@ abstract class GenerateBlastDB(
         |fasta: ${sourceFastaS3}
         |""".stripMargin
       )
-      s3client.download(sourceFastaS3, sourceFastaFile.toJava)
+      s3client.download(sourceFastaS3, sourceFastaFile.toJava).get
 
-      outputs.createDirectory()
+      blastdb.createDirectory()
       println("Generating BLAST DB...")
     } -&-
     seqToInstructions(
@@ -49,7 +49,7 @@ abstract class GenerateBlastDB(
           in(sourceFastaFile.toJava) ::
           input_type(DBInputType.fasta) ::
           dbtype(dbType) ::
-          out((outputs / sourceFastaFile.name).toJava) ::
+          out((blastdb / sourceFastaFile.name).toJava) ::
           *[AnyDenotation],
         optionValues = makeblastdb.defaults.update(
           title(dbName) ::
@@ -60,7 +60,8 @@ abstract class GenerateBlastDB(
     ) -&-
     LazyTry {
       println("Uploading the DB...")
-      s3client.upload(outputs.toJava, s3destination)
+      s3client.upload(blastdb.toJava, s3destination).get
+      s3client.shutdown()
     } -&-
     say(s"The database is uploaded to [${s3destination}]")
   }
