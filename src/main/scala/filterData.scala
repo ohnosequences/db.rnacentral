@@ -5,6 +5,7 @@ import ohnosequences.awstools._, s3._
 import ohnosequences.fastarious.fasta._
 import com.github.tototoshi.csv._
 import better.files._
+import java.nio.file.Files
 
 
 /* Each filtering bundle is defined by its input data, two output S3 folders and the filtering method.
@@ -39,7 +40,8 @@ abstract class FilterData(
 
     case object fasta {
       lazy val file = folder.file / fastaName
-      lazy val parsed: Iterator[FASTA] = this.file.lineIterator.buffered.parseFastaSkipCrap
+      lazy val lines: Iterator[String] = Files.lines(this.file.path).iterator.asScala
+      lazy val parsed: Iterator[FASTA] = lines.buffered.parseFastaSkipCrap
     }
   }
 
