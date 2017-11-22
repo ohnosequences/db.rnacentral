@@ -1,19 +1,25 @@
 name          := "api.rnacentral"
 organization  := "ohnosequences"
-description   := "api.rnacentral project"
+description   := "RNACentral data API"
 
 bucketSuffix  := "era7.com"
 
-libraryDependencies ++= Seq()
+crossScalaVersions  := Seq("2.11.11", "2.12.4")
+scalaVersion        := crossScalaVersions.value.max
 
-// For resolving dependencies version conflicts:
-// dependencyOverrides ++= Set()
+libraryDependencies ++= Seq(
+  "com.github.tototoshi"  %%  "scala-csv"   % "1.3.5",
+  "ohnosequences"         %%  "fastarious"  % "0.12.0"
+) ++ testDependencies
 
-// Uncomment if you need to deploy this project as a Statika bundle:
-// generateStatikaMetadataIn(Compile)
+val testDependencies = Seq(
+  "org.scalatest" %% "scalatest" % "3.0.4" % Test
+)
 
-// Uncomment if you have release-only tests using the assembled fat-jar:
-// fullClasspath in assembly := (fullClasspath in Test).value
+// wartremoverErrors in (Test, compile) := Seq()
+// wartremoverErrors in (Compile, compile) := Seq()
 
-// Uncomment for Java projects:
-// enablePlugin(JavaOnlySettings)
+// shows time for each test:
+testOptions in Test += Tests.Argument("-oD")
+// disables parallel exec
+parallelExecution in Test := false
