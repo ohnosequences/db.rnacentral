@@ -1,5 +1,29 @@
 package ohnosequences.api.rnacentral
 
+case class Entry(
+  val rnaID               : RNAID,
+  val sequence            : String,
+  val sequenceAnnotations : Set[SequenceAnnotation],
+  val entryAnnotations    : Set[EntryAnnotation] 
+)
+
+case class EntryAnnotation(
+  val ncbiTaxonomyID  : TaxonID         ,
+  val databaseEntry   : DatabaseEntry   ,
+  val rnaType         : RNAType         ,
+  val geneName        : Option[String]
+)
+
+case class DatabaseEntry(
+  val database: Database,
+  val id      : String
+)
+
+case class SequenceAnnotation(
+  val ncbiTaxonomyID  : TaxonID,
+  val description     : String
+)
+
 sealed class RNAType(val name: String)
 
 case object RNAType {
@@ -127,27 +151,3 @@ case object Database {
       case _                => None
     }
 }
-
-case class DatabaseEntry(
-  val database: Database,
-  val id      : String
-)
-
-case class SequenceAnnotation(
-  val ncbiTaxonomyID  : Int,
-  val description     : String
-)
-
-case class EntryAnnotation(
-  val ncbiTaxonomyID  : Int             ,
-  val databaseEntry   : DatabaseEntry   ,
-  val rnaType         : RNAType         ,
-  val geneName        : Option[String]
-)
-
-case class Entry(
-  val rnaID               : RNAID,
-  val sequence            : String,
-  val sequenceAnnotations : Set[SequenceAnnotation],
-  val entryAnnotations    : Set[EntryAnnotation] 
-)
