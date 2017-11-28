@@ -1,60 +1,43 @@
 package ohnosequences.db.rnacentral.test
 
-import ohnosequences.cosas._, records._
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, s3._
-import better.files._
 import ohnosequences.db.rnacentral._
+import java.io.File
 
-/*
-  ### Mirror RNACentral release files in S3
+case object mirrorRNAcentral extends Bundle() {
 
-  This bundle
+  lazy val dataFolder = 
+    new File("/media/ephemeral0")
 
-  1. downloads all RNACentral raw files from the EBI ftp
-  4. uploads everything to S3
-*/
-class MirrorRNAcentral[R <: AnyRNAcentral](r: R) extends Bundle() {
+  lazy val speciesSpecificFASTAFile = 
+    new File(dataFolder, data.input.speciesSpecificFASTA)
 
-  type RNACentral = R
-  val rnaCentral: RNACentral = r
+  lazy val idMappingTSVFile = 
+    new File(dataFolder, data.input.idMappingTSV)
 
-  lazy val dataFolder = file"/media/ephemeral0"
+  private def download(url: String) =
+    cmd("wget")(url)
 
-  lazy val fastaFile = dataFolder/"rnacentral_active.fasta"
-  lazy val tableFile = dataFolder/"id_mapping.tsv"
+  private def extract(file: String) =
+    cmd("gzip")("-d", file)
 
-  lazy val getRnaCentralFastaFileGz = cmd("wget")(
-    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/sequences/${fastaFile.name}.gz"
-  )
-  lazy val getRnaCentralIdMappingGz = cmd("wget")(
-    s"ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/${rnaCentral.version}/id_mapping/${tableFile.name}.gz"
-  )
-
-  def instructions: AnyInstructions = {
-    // get raw input stuff from EBI FTP
-    getRnaCentralFastaFileGz -&-
-    cmd("gzip")("-d", s"${fastaFile.name}.gz") -&-
-    getRnaCentralIdMappingGz -&-
-    cmd("gzip")("-d", s"${tableFile.name}.gz") -&-
+  private def uploadToS3 =
     LazyTry {
-      println("Uploading uncompressed data...")
-      lazy val s3client = s3.defaultClient
 
-      // upload the uncompressed fasta file
-      s3client.upload(fastaFile.toJava, rnaCentral.fasta)
-      println("Uploaded fasta file.")
+      val s3client = 
+        s3.defaultClient
 
-      // upload full table file
-      s3client.upload(tableFile.toJava, rnaCentral.table)
-      println("Uploaded table file.")
+      s3client.upload(speciesSpecificFASTAFile, data.speciesSpecificFASTA)
+      s3client.upload(idMappingTSVFile, data.idMappingTSV)
+    }
 
-      println("Shutdown the transfer manager.")
-    } -&-
-    say(s"RNACentral version ${rnaCentral.version} mirrored at ${rnaCentral.prefix}")
-  }
+
+  def instructions: AnyInstructions =
+    download(data.input.speciesSpecificFASTAGZURL)  -&-
+    download(data.input.idMappingTSVGZURL)          -&-
+    extract(data.input.speciesSpecificFASTAGZ)      -&-
+    extract(data.input.idMappingTSVGZ)              -&-
+    uploadToS3                                      -&- 
+    say(s"RNACentral ${data.version} mirrored at ${data.prefix}")
 }
-
-// bundle:
-case object MirrorRNAcentral6 extends MirrorRNAcentral(RNAcentral6)
-case object MirrorRNAcentral7 extends MirrorRNAcentral(RNAcentral7)
