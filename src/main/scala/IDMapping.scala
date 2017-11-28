@@ -9,8 +9,45 @@ case object IDMapping {
     data =>
       (io tsv data.idMapping) map rowFrom
 
+  val entryAnnotationsOrErrors
+    : RNACentralData => 
+      Iterator[(ParsingError + ParsingError) + (RNAID, EntryAnnotation)] = 
+      rows(_).map {
+        case Left(err)  => Left(Left(err))
+        case Right(row) => entryAnnotationFrom(row) match {
+          case Left(err)          => Left(Right(err))
+          case Right(entryAnnot)  => Right(entryAnnot)
+        }
+      }
+
+  val entryAnnotationsByRNAIDOrErrors
+    : RNACentralData => 
+      Iterator[
+        Set[ParsingError + ParsingError] + (RNAID, Set[EntryAnnotation])
+      ] =
+        data =>
+        iterators.segmentsFrom({
+          e: (ParsingError + ParsingError) + (RNAID, EntryAnnotation) => 
+            e match {
+              case Left(z)        => None
+              case Right((id,_))  => Some(id)
+            }        
+          }
+        )(entryAnnotationsOrErrors(data)) map {
+          case (None, xs) => 
+            Left((xs collect { case Left(z) => z }).toSet)
+          case (Some(id), xs) => 
+            Right { (id, (xs collect { case Right((id,a)) => a }).toSet) }
+        }
+
+
   val entryAnnotations: Iterator[Row] => Iterator[ParsingError + (RNAID, EntryAnnotation)] =
     _ map entryAnnotationFrom
+
+  val entryAnnotationsByRNAID: Iterator[(RNAID, EntryAnnotation)] => Iterator[(RNAID, Set[EntryAnnotation])] =
+    xs =>
+      iterators.segmentsFrom({ e: (RNAID, EntryAnnotation) => e._1 })(xs)
+        .map { case (id, zs) => (id, zs.map(_._2).toSet) }
 
   sealed abstract class ParsingError
   case object ParsingError {

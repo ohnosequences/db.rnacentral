@@ -1,5 +1,12 @@
 package ohnosequences.api.rnacentral
 
+import java.io.File
+
+case class RNACentralData(
+  val idMapping             : File,
+  val speciesSpecificFasta  : File
+)
+
 case class Entry(
   val rnaID               : RNAID,
   val sequence            : String,
