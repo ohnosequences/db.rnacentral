@@ -4,45 +4,46 @@ import ohnosequences.awstools._, s3._
 
 case object data {
 
-  val version: String =
+  lazy val version: String =
     "7.0"
 
   case object input {
 
-    val baseURL: String =
+    lazy val baseURL: String =
     "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
   
-    val releaseURL: String =
+    lazy val releaseURL: String =
       s"${baseURL}/releases/${version}"
 
-    val idMappingTSV: String =
+    lazy val idMappingTSV: String =
       "id_mapping.tsv"
 
-    val idMappingTSVGZ: String =
+    lazy val idMappingTSVGZ: String =
       s"${idMappingTSV}.gz"
     
-    val idMappingTSVGZURL: String =
+    lazy val idMappingTSVGZURL: String =
       s"${releaseURL}/id_mapping/${idMappingTSVGZ}"
 
-    val speciesSpecificFASTA: String =
+    lazy val speciesSpecificFASTA: String =
       "rnacentral_species_specific_ids.fasta"
 
-    val speciesSpecificFASTAGZ: String =
+    lazy val speciesSpecificFASTAGZ: String =
       s"${speciesSpecificFASTA}.gz"
 
-    val speciesSpecificFASTAGZURL =
+    lazy val speciesSpecificFASTAGZURL =
       s"${releaseURL}/sequences/${speciesSpecificFASTAGZ}"
   }
 
-  val prefix =
+  lazy val prefix =
     s3"resources.ohnosequences.com" /
+      "ohnosequences"               /
       "db"                          /
       "rnacentral"                  /
       version                       /
 
-  val idMappingTSV: S3Object =
+  lazy val idMappingTSV: S3Object =
     prefix / input.idMappingTSV
 
-  val speciesSpecificFASTA: S3Object =
+  lazy val speciesSpecificFASTA: S3Object =
     prefix / input.speciesSpecificFASTA
 }
