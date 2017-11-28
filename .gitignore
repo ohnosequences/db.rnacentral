@@ -15,6 +15,7 @@ project/plugins/project/
 data/in/
 data/out/
 
+.vscode*
 .tags*
 .sublime*
 .atom*
