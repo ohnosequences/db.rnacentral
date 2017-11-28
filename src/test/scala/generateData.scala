@@ -5,13 +5,13 @@ import era7bio.defaults._
 
 class GenerateDataTests extends org.scalatest.FunSuite {
 
-  val user = awsUsers.aalekhin
+  val user = awsUsers.eparejatobes
 
   test("Run RNAcentral mirroring and wait for the result", ReleaseOnlyTest) {
 
     rnacentral.launchAndMonitor(
       user,
-      compats.MirrorRNAcentral7,
+      compats.mirrorRNAcentral,
       terminateOnSuccess = true
     ).fold(
       { msg => fail(msg) },

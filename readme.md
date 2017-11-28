@@ -11,8 +11,3 @@ This is a bundle for mirroring [RNAcentral](http://rnacentral.org/) database to 
 ```
 s3://resources.ohnosequences.com/ohnosequences/db-rnacentral/<release_version_number>/
 ```
-
-And also a library for building BLAST reference databases based on RNAcentral:
-
-- [ohnosequences/db.rna16s](https://github.com/ohnosequences/db.rna16s)
-- [ohnosequences/db.rna18s](https://github.com/ohnosequences/db.rna18s)
