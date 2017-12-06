@@ -1,4 +1,4 @@
-# db.rnacentral [![](https://img.shields.io/badge/RNAcentral-v6.0-blue.svg)](http://blog.rnacentral.org/2017/01/rnacentral-release-6.html)
+# db.rnacentral [![](https://img.shields.io/badge/RNAcentral-v7.0-blue.svg)](http://blog.rnacentral.org/2017/05/rnacentral-release-7.html)
 
 [![](https://travis-ci.org/ohnosequences/db.rnacentral.svg?branch=master)](https://travis-ci.org/ohnosequences/db.rnacentral)
 [![](https://img.shields.io/codacy/68ed9f50581647aaa73dbda60ff24b50.svg)](https://www.codacy.com/app/ohnosequences/db-rnacentral)
