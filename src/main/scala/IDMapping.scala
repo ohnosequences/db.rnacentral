@@ -48,9 +48,9 @@ case object IDMapping {
           }
         )(entryAnnotationsOrErrors(data)) map {
           case (None, xs) => 
-            Left( (iterators right xs).toSet )
+            Left( (xs collect { case Left(z) => z }).toSet )
           case (Some(id), xs) => 
-            Right { (id, (iterators right xs).toSet) }
+            Right { (id, (xs collect { case Right(z) => z }).toSet) }
         }
 
   val entryAnnotations: Iterator[Row] => Iterator[ParsingError + EntryAnnotation] =
