@@ -11,7 +11,21 @@ class Sequences extends FunSuite {
     testSequences forall {
       case (id, fastas) =>
         fastas.nonEmpty &&
-        (fastas forall { fa => sequences.rnaIDFromFASTA(fa) == id })
+        (fastas forall { sequences.fasta.rnaID(_) == id })
+    }
+  }
+
+  test("idempotent parsing/serialization", ReleaseOnlyTest) {
+
+    // parse and serialize
+    def parseAndSerializeAndParse =
+      sequences.rnaIDAndSequenceDataFrom(
+        (sequences sequenceAnnotationsAndSequence testData)
+          .map { x => (x._1, sequences.seqDataToFASTAs(x).toSeq) }
+      )
+
+    (sequences.sequenceAnnotationsAndSequence(testData) zip parseAndSerializeAndParse) foreach { case (x1, x2) =>
+      assert { x1 == x2 }
     }
   }
 }

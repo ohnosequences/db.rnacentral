@@ -16,7 +16,7 @@ class IDMapping extends FunSuite {
     assert { 
       allRight {
         IDMapping entryAnnotations {
-          (IDMapping rows testData) collect { case Right(row) => row }
+           iterators right (IDMapping rows testData)
         }
       }
     }

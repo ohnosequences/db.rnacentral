@@ -7,14 +7,19 @@ case class RNACentralData(
   val speciesSpecificFasta  : File
 )
 
+case class RNASequence(
+  val rnaID   : RNAID,
+  val sequence: String
+)
+
 case class Entry(
-  val rnaID               : RNAID,
-  val sequence            : String,
-  val sequenceAnnotations : Set[SequenceAnnotation],
+  val rnaSequence         : RNASequence             ,
+  val sequenceAnnotations : Set[SequenceAnnotation] ,
   val entryAnnotations    : Set[EntryAnnotation] 
 )
 
 case class EntryAnnotation(
+  val rnaID           : RNAID           ,
   val ncbiTaxonomyID  : TaxonID         ,
   val databaseEntry   : DatabaseEntry   ,
   val rnaType         : RNAType         ,
@@ -27,7 +32,8 @@ case class DatabaseEntry(
 )
 
 case class SequenceAnnotation(
-  val ncbiTaxonomyID  : TaxonID,
+  val rnaID           : RNAID   ,
+  val ncbiTaxonomyID  : TaxonID ,
   val description     : String
 )
 
