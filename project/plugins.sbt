@@ -4,4 +4,5 @@ resolvers ++= Seq(
   Resolver.jcenterRepo
 )
 
+addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
 addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.9.0")
