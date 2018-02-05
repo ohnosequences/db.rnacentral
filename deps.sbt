@@ -6,7 +6,3 @@ libraryDependencies ++= Seq(
 val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % "3.0.4" % Test
 )
-
-dependencyOverrides ++= Seq(
-  "org.scala-lang" % "scala-library" % "2.12.4"
-)
