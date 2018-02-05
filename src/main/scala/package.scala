@@ -2,9 +2,9 @@ package ohnosequences.api
 
 package object rnacentral {
 
-  type +[A,B]   = Either[A,B]
-  type RNAID    = String
-  type TaxonID  = Int
+  type +[A, B] = Either[A, B]
+  type RNAID   = String
+  type TaxonID = Int
 
   type RNAIDAndEntryAnnotation =
     (RNAID, EntryAnnotation)
@@ -18,6 +18,6 @@ package object rnacentral {
   type Grouped[X] =
     (RNAID, Set[X])
 
-  type GroupedBy[X,Y] =
+  type GroupedBy[X, Y] =
     (Y, Set[X])
 }

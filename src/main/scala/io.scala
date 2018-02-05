@@ -15,11 +15,11 @@ case object io {
 
   case object format extends TSVFormat {
 
-    override val lineTerminator: String = 
+    override val lineTerminator: String =
       "\n"
 
     // NOTE: this tsv has '\' inside fields; we need to set it to something not used there
-    override val escapeChar: Char = 
+    override val escapeChar: Char =
       '†'
   }
 }
