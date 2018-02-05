@@ -8,6 +8,6 @@ class Entries extends FunSuite {
 
   test("parse all", ReleaseOnlyTest) {
 
-    assert { allRight { entries entriesFrom testData } }
+    assert { allRight { entries entriesFrom data } }
   }
 }

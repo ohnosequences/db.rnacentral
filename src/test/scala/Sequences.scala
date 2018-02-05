@@ -2,7 +2,7 @@ package ohnosequences.api.rnacentral.test
 
 import org.scalatest.FunSuite
 import ohnosequences.api.rnacentral._
-import ohnosequences.test._, testData._
+import ohnosequences.test._
 
 class Sequences extends FunSuite {
 
@@ -11,7 +11,7 @@ class Sequences extends FunSuite {
     testSequences forall {
       case (id, fastas) =>
         fastas.nonEmpty &&
-        (fastas forall { sequences.fasta.rnaID(_) == id })
+          (fastas forall { sequences.fasta.rnaID(_) == id })
     }
   }
 
@@ -20,12 +20,15 @@ class Sequences extends FunSuite {
     // parse and serialize
     def parseAndSerializeAndParse =
       sequences.rnaIDAndSequenceDataFrom(
-        (sequences sequenceAnnotationsAndSequence testData)
-          .map { x => (x._1, sequences.seqDataToFASTAs(x).toSeq) }
+        (sequences sequenceAnnotationsAndSequence data)
+          .map { x =>
+            (x._1, sequences.seqDataToFASTAs(x).toSeq)
+          }
       )
 
-    (sequences.sequenceAnnotationsAndSequence(testData) zip parseAndSerializeAndParse) foreach { case (x1, x2) =>
-      assert { x1 == x2 }
+    (sequences.sequenceAnnotationsAndSequence(data) zip parseAndSerializeAndParse) foreach {
+      case (x1, x2) =>
+        assert { x1 == x2 }
     }
   }
 }

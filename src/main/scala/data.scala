@@ -2,23 +2,23 @@ package ohnosequences.api.rnacentral
 
 import java.io.File
 
-case class RNACentralData(
+final case class RNACentralData(
     val idMapping: File,
     val speciesSpecificFasta: File
 )
 
-case class RNASequence(
+final case class RNASequence(
     val rnaID: RNAID,
     val sequence: String
 )
 
-case class Entry(
+final case class Entry(
     val rnaSequence: RNASequence,
     val sequenceAnnotations: Set[SequenceAnnotation],
     val entryAnnotations: Set[EntryAnnotation]
 )
 
-case class EntryAnnotation(
+final case class EntryAnnotation(
     val rnaID: RNAID,
     val ncbiTaxonomyID: TaxonID,
     val databaseEntry: DatabaseEntry,
@@ -26,12 +26,12 @@ case class EntryAnnotation(
     val geneName: Option[String]
 )
 
-case class DatabaseEntry(
+final case class DatabaseEntry(
     val database: Database,
     val id: String
 )
 
-case class SequenceAnnotation(
+final case class SequenceAnnotation(
     val rnaID: RNAID,
     val ncbiTaxonomyID: TaxonID,
     val description: String

@@ -12,7 +12,7 @@ case object entries {
         case (_, Left(errs)) =>
           Left(errs map Error.IDMappingError)
 
-        case ((x @ RNASequence(id1, seq), seqAnnots), Right((id2, annots))) =>
+        case ((x @ RNASequence(id1, _), seqAnnots), Right((id2, annots))) =>
           if (id1 == id2)
             Right(
               Entry(
@@ -28,12 +28,12 @@ case object entries {
   sealed abstract class Error
   case object Error {
 
-    case class DifferentRNAIDs(
+    final case class DifferentRNAIDs(
         val sequenceID: RNAID,
         val mappingID: RNAID
     ) extends Error
 
-    case class IDMappingError(
+    final case class IDMappingError(
         val error: IDMapping.ParsingError + IDMapping.ParsingError
     ) extends Error
   }

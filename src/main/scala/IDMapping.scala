@@ -62,10 +62,10 @@ case object IDMapping {
   sealed abstract class ParsingError
   case object ParsingError {
 
-    case object generic                              extends ParsingError
-    case class UndefinedDatabase(val name: String)   extends ParsingError
-    case class UndefinedRNAType(val name: String)    extends ParsingError
-    case class MalformedRow(val fields: Seq[String]) extends ParsingError
+    case object generic                                    extends ParsingError
+    final case class UndefinedDatabase(val name: String)   extends ParsingError
+    final case class UndefinedRNAType(val name: String)    extends ParsingError
+    final case class MalformedRow(val fields: Seq[String]) extends ParsingError
   }
 
   //////////////////////////////////////////////////////////////////////////////

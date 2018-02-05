@@ -8,15 +8,15 @@ class IDMapping extends FunSuite {
 
   test("well-formed tsv", ReleaseOnlyTest) {
 
-    assert { allRight( IDMapping rows testData ) }
+    assert { allRight(IDMapping rows data) }
   }
 
   test("parse all EntryAnnotations", ReleaseOnlyTest) {
 
-    assert { 
+    assert {
       allRight {
         IDMapping entryAnnotations {
-           iterators right (IDMapping rows testData)
+          iterators right (IDMapping rows data)
         }
       }
     }

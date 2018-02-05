@@ -3,7 +3,7 @@ package ohnosequences.api.rnacentral
 case object iterators {
 
   def right[A, B]: Iterator[A + B] => Iterator[B] =
-    _ collect { case Right(z) => z }
+    abs => abs.collect({ case Right(z) => z: B })
 
   def segmentsFrom[V, X]: (V => X) => (Iterator[V] => Iterator[(X, Seq[V])]) =
     f =>
