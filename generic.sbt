@@ -9,14 +9,12 @@ dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value
 scalacOptions ++= Seq(
   "-Xsource:2.13",
   "-Xlint",
-  "-Xlog-reflective-calls",
-  // "-Ywarn-unused",
-  "-Ywarn-adapted-args",
-  "-opt-warnings:_",
   "-unchecked",
-  // "-Xstrict-inference",
-  "-Ywarn-unused-import",
   "-Yno-adapted-args",
+  "-Ywarn-adapted-args",
+  "-Ywarn-unused-import",
+  "-Xlog-reflective-calls",
+  "-opt-warnings:_",
   "-Ydelambdafy:method"
 )
 
