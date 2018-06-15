@@ -44,6 +44,15 @@ wartremoverWarnings in (Compile, compile) := Warts.allBut(
   Wart.ImplicitConversion,
   Wart.Nothing // needed because of the contexts compiler plugin
 )
+
+wartremoverErrors in (Test, compile) := Seq()
+
+wartremoverWarnings in (Test, compile) := Warts.allBut(
+  Wart.Equals,
+  Wart.FinalVal,
+  Wart.ImplicitConversion,
+  Wart.Nothing // needed because of the contexts compiler plugin
+)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Test configuration
