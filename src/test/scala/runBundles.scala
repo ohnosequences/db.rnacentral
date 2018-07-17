@@ -23,7 +23,7 @@ case object rnacentral {
       user: AWSUser,
       compat: compats.DefaultCompatible[B]
   ): Option[Instance] =
-    EC2Client(credentials = user.profile)
+    ec2.defaultClient
       .runInstances(defaultSpecs(compat, user))(1)
       .toOption
       .flatMap { _.headOption }
