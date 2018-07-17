@@ -10,8 +10,8 @@ case object data {
   case object input {
 
     lazy val baseURL: String =
-    "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
-  
+      "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
+
     lazy val releaseURL: String =
       s"${baseURL}/releases/${version}"
 
@@ -20,7 +20,7 @@ case object data {
 
     lazy val idMappingTSVGZ: String =
       s"${idMappingTSV}.gz"
-    
+
     lazy val idMappingTSVGZURL: String =
       s"${releaseURL}/id_mapping/${idMappingTSVGZ}"
 
@@ -36,10 +36,10 @@ case object data {
 
   lazy val prefix =
     s3"resources.ohnosequences.com" /
-      "ohnosequences"               /
-      "db"                          /
-      "rnacentral"                  /
-      version                       /
+      "ohnosequences" /
+      "db" /
+      "rnacentral" /
+      version /
 
   lazy val idMappingTSV: S3Object =
     prefix / input.idMappingTSV
