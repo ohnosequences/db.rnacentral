@@ -5,7 +5,7 @@ import ohnosequences.awstools._, s3._
 case object data {
 
   lazy val version: String =
-    "7.0"
+    "9.0"
 
   case object input {
 
