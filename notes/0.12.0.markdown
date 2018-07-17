@@ -1,3 +1,5 @@
 # 0.12.0
 
-Updates to RNACentral v9.
+**Do not use this version; move to `0.12.1`**
+
+~~Updates to RNACentral v9.~~
