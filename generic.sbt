@@ -1,6 +1,6 @@
 // generic conf; don't change this file
 // pull particular versions from buildconf
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
 
 dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value
 
@@ -9,6 +9,7 @@ dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value
 scalacOptions ++= Seq(
   "-Xsource:2.13",
   "-Xlint",
+<<<<<<< HEAD
   "-Xfatal-warnings",
   "-Xlog-reflective-calls",
   // "-Ywarn-unused",
@@ -17,9 +18,20 @@ scalacOptions ++= Seq(
   "-unchecked",
   // "-Xstrict-inference",
   "-Ywarn-unused-import",
+=======
+  "-unchecked",
+>>>>>>> d0cecdf2167a4359578e28fef42a5e268fc3b789
   "-Yno-adapted-args",
+  "-Ywarn-adapted-args",
+  "-Ywarn-unused-import",
+  "-Xlog-reflective-calls",
+  "-opt-warnings:_",
   "-Ydelambdafy:method"
 )
+
+// scaladoc
+////////////////////////////////////////////////////////////////////////////////
+scalacOptions in (Compile, doc) ++= Seq("-groups", "-implicits", "-feature")
 
 addCompilerPlugin("ohnosequences" %% "contexts" % "0.5.0")
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,6 +52,15 @@ wartremoverWarnings in (Compile, compile) := Warts.allBut(
   Wart.ImplicitConversion,
   Wart.Nothing // needed because of the contexts compiler plugin
 )
+
+wartremoverErrors in (Test, compile) := Seq()
+
+wartremoverWarnings in (Test, compile) := Warts.allBut(
+  Wart.Equals,
+  Wart.FinalVal,
+  Wart.ImplicitConversion,
+  Wart.Nothing // needed because of the contexts compiler plugin
+)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Test configuration
@@ -54,5 +75,3 @@ parallelExecution in Test := false
 ////////////////////////////////////////////////////////////////////////////////
 bucketSuffix := "era7.com"
 ////////////////////////////////////////////////////////////////////////////////
-
-// overriding!
