@@ -9,13 +9,18 @@ class GenerateDataTests extends org.scalatest.FunSuite {
 
   test("Run RNAcentral mirroring and wait for the result", ReleaseOnlyTest) {
 
-    rnacentral.launchAndMonitor(
-      user,
-      compats.mirrorRNAcentral,
-      terminateOnSuccess = true
-    ).fold(
-      { msg => fail(msg) },
-      { msg => info(msg); assert(true) }
-    )
+    rnacentral
+      .launchAndMonitor(
+        user,
+        compats.mirrorRNAcentral,
+        terminateOnSuccess = true
+      )
+      .fold(
+        { msg =>
+          fail(msg)
+        }, { msg =>
+          info(msg); assert(true)
+        }
+      )
   }
 }
