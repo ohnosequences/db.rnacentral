@@ -4,6 +4,15 @@ import ohnosequences.awstools._, s3._
 
 case object data {
 
+  sealed abstract class Version(val rep: String)
+  object Version {
+
+    lazy val latest: Version = _9_0
+
+    case object _9_0 extends Version("9.0")
+    // ...
+  }
+
   lazy val version: String =
     "9.0"
 
