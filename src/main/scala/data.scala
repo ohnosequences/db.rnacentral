@@ -23,7 +23,7 @@ case object data {
     final val baseURL: String =
       "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
 
-    def releaseURL(version: data.Version): String =
+    def releaseURL(version: Version): String =
       s"${baseURL}/releases/${version}"
 
     def idMappingTSV: String =
@@ -32,7 +32,7 @@ case object data {
     def idMappingTSVGZ: String =
       s"${idMappingTSV}.gz"
 
-    def idMappingTSVGZURL(version: data.Version): String =
+    def idMappingTSVGZURL(version: Version): String =
       s"${releaseURL(version)}/id_mapping/${idMappingTSVGZ}"
 
     def speciesSpecificFASTA: String =
@@ -41,21 +41,21 @@ case object data {
     def speciesSpecificFASTAGZ: String =
       s"${speciesSpecificFASTA}.gz"
 
-    def speciesSpecificFASTAGZURL(version: data.Version): String =
+    def speciesSpecificFASTAGZURL(version: Version): String =
       s"${releaseURL(version)}/sequences/${speciesSpecificFASTAGZ}"
   }
 
-  def prefix(version: data.Version): S3Folder =
+  def prefix(version: Version): S3Folder =
     s3"resources.ohnosequences.com" /
       "ohnosequences" /
       "db" /
       "rnacentral" /
       version.toString /
 
-  def idMappingTSV(version: data.Version): S3Object =
+  def idMappingTSV(version: Version): S3Object =
     prefix(version) / input.idMappingTSV
 
-  def speciesSpecificFASTA(version: data.Version): S3Object =
+  def speciesSpecificFASTA(version: Version): S3Object =
     prefix(version) / input.speciesSpecificFASTA
 
   def everything(version: Version): Set[S3Object] =
