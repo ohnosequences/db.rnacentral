@@ -2,21 +2,21 @@ package ohnosequences.db.rnacentral
 
 import ohnosequences.awstools._, s3._
 
+sealed abstract class Version(val name: String) {
+  override final def toString: String = name
+}
+object Version {
+
+  lazy val latest: Version = _9_0
+
+  val all: Set[Version] =
+    Set(_9_0, _8_0)
+
+  case object _9_0 extends Version("9.0")
+  case object _8_0 extends Version("8.0")
+}
+
 case object data {
-
-  sealed abstract class Version(val rep: String) {
-    override final def toString: String = rep
-  }
-  object Version {
-
-    lazy val latest: Version = _9_0
-
-    val all: Set[Version] =
-      Set(_9_0, _8_0)
-
-    case object _9_0 extends Version("9.0")
-    case object _8_0 extends Version("8.0")
-  }
 
   case object input {
 
@@ -57,4 +57,7 @@ case object data {
 
   def speciesSpecificFASTA(version: data.Version): S3Object =
     prefix(version) / input.speciesSpecificFASTA
+
+  def everything(version: Version): Set[S3Object] =
+    Set(idMappingTSV(version), speciesSpecificFASTA(version))
 }
