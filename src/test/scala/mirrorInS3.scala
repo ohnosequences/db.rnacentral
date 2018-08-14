@@ -5,20 +5,24 @@ import ohnosequences.db.rnacentral._
 import java.io.File
 import ohnosequences.test.ReleaseOnlyTest
 import org.scalatest.FunSuite
+import ohnosequences.awstools.s3, s3.ScalaS3Client
 
 class MirrorInS3 extends FunSuite {
 
+  private val s3Client = ScalaS3Client(s3.defaultClient)
+
   test("Check previous releases") {
 
-    Version.all
-      .map { v =>
-        (v, rnacentral.data everything v)
-      }
-      .foreach {
-        case (v, objs) =>
-          // TODO check files are there
-          ???
-      }
+    val vData = Version.all map { v =>
+      (v, rnacentral.data everything v)
+    }
+
+    vData foreach {
+      case (v, objs) =>
+        println(s"checking ${v} data:")
+        println(s"  ${objs}")
+        assert { objs forall s3Client.objectExists _ }
+    }
   }
 
   test("Mirror latest release", ReleaseOnlyTest) {
