@@ -1,4 +1,4 @@
-package ohnosequences.api.rnacentral
+package ohnosequences.db.rnacentral
 
 case object entries {
 

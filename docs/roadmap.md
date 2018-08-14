@@ -24,4 +24,4 @@ Having two separate files which furthermore need to be kept in the same order is
 
 ### A better data model
 
-we have a good enough representation in api.rnacentral (see `data.scala`). We want to have a graph model for it.
+we have a good enough representation in db.rnacentral (see `data.scala`). We want to have a graph model for it.

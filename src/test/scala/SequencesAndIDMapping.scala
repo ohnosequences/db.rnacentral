@@ -1,4 +1,4 @@
-package ohnosequences.api.rnacentral.test
+package ohnosequences.db.rnacentral.test
 
 import org.scalatest.FunSuite
 import ohnosequences.test._

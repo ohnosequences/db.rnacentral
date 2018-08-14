@@ -1,8 +1,8 @@
-package ohnosequences.api.rnacentral.test
+package ohnosequences.db.rnacentral.test
 
 import org.scalatest.FunSuite
 import ohnosequences.test._
-import ohnosequences.api.rnacentral._
+import ohnosequences.db.rnacentral._
 
 class IDMapping extends FunSuite {
 
