@@ -1,5 +1,6 @@
 package ohnosequences.db.rnacentral.test
 
+import ohnosequences.db.rnacentral
 import ohnosequences.db.rnacentral._
 import java.io.File
 import ohnosequences.test.ReleaseOnlyTest
@@ -11,7 +12,7 @@ class MirrorInS3 extends FunSuite {
 
     Version.all
       .map { v =>
-        (v, data everything v)
+        (v, rnacentral.data everything v)
       }
       .foreach {
         case (v, objs) =>
@@ -28,13 +29,13 @@ class MirrorInS3 extends FunSuite {
       new File(s"./data/${version.name}/")
 
     val tmpIdMappingTSVGZFile =
-      new File(tmpFolder, data.input.idMappingTSVGZ)
+      new File(tmpFolder, rnacentral.data.input.idMappingTSVGZ)
 
     val tmpIdMappingTSVFile =
-      new File(tmpFolder, data.input.idMappingTSV)
+      new File(tmpFolder, rnacentral.data.input.idMappingTSV)
 
     val tmpSpeciesSpecificFASTAFile =
-      new File(tmpFolder, data.input.speciesSpecificFASTA)
+      new File(tmpFolder, rnacentral.data.input.speciesSpecificFASTA)
 
     // TODO needs code for files and S3 interaction
     // assert {
