@@ -1,11 +1,13 @@
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "aws-scala-tools" % "0.20.0"
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
+  "com.github.tototoshi" %% "scala-csv"  % "1.3.5",
+  "ohnosequences"        %% "fastarious" % "0.12.0"
 ) ++ testDependencies
 
-resolvers := Seq(
-  "Era7 private maven releases" at s3("private.releases.era7.com").toHttps(
-    s3region.value.toString)
-) ++ resolvers.value
+// resolvers := Seq(
+//   "Era7 private maven releases" at s3("private.releases.era7.com").toHttps(
+//     s3region.value.toString)
+// ) ++ resolvers.value
 
 val testDependencies = Seq(
   "era7bio"       %% "defaults"  % "0.3.0-RC3" % Test,

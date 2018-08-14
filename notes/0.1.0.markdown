@@ -2,3 +2,4 @@ First release. This repository contains code for
 
 - mirroring RNACentral data in S3
 - generating an id mapping file containing only the active sequences
+
