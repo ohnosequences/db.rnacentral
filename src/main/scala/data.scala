@@ -2,48 +2,62 @@ package ohnosequences.db.rnacentral
 
 import ohnosequences.awstools._, s3._
 
-case object data {
+sealed abstract class Version(val name: String) {
+  override final def toString: String = name
+}
+object Version {
 
-  lazy val version: String =
-    "9.0"
+  lazy val latest: Version = _9_0
+
+  val all: Set[Version] =
+    Set(_9_0, _8_0)
+
+  case object _9_0 extends Version("9.0")
+  case object _8_0 extends Version("8.0")
+}
+
+case object data {
 
   case object input {
 
-    lazy val baseURL: String =
+    final val baseURL: String =
       "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
 
-    lazy val releaseURL: String =
+    def releaseURL(version: Version): String =
       s"${baseURL}/releases/${version}"
 
-    lazy val idMappingTSV: String =
+    def idMappingTSV: String =
       "id_mapping.tsv"
 
-    lazy val idMappingTSVGZ: String =
+    def idMappingTSVGZ: String =
       s"${idMappingTSV}.gz"
 
-    lazy val idMappingTSVGZURL: String =
-      s"${releaseURL}/id_mapping/${idMappingTSVGZ}"
+    def idMappingTSVGZURL(version: Version): String =
+      s"${releaseURL(version)}/id_mapping/${idMappingTSVGZ}"
 
-    lazy val speciesSpecificFASTA: String =
+    def speciesSpecificFASTA: String =
       "rnacentral_species_specific_ids.fasta"
 
-    lazy val speciesSpecificFASTAGZ: String =
+    def speciesSpecificFASTAGZ: String =
       s"${speciesSpecificFASTA}.gz"
 
-    lazy val speciesSpecificFASTAGZURL =
-      s"${releaseURL}/sequences/${speciesSpecificFASTAGZ}"
+    def speciesSpecificFASTAGZURL(version: Version): String =
+      s"${releaseURL(version)}/sequences/${speciesSpecificFASTAGZ}"
   }
 
-  lazy val prefix =
+  def prefix(version: Version): S3Folder =
     s3"resources.ohnosequences.com" /
       "ohnosequences" /
       "db" /
       "rnacentral" /
-      version /
+      version.toString /
 
-  lazy val idMappingTSV: S3Object =
-    prefix / input.idMappingTSV
+  def idMappingTSV(version: Version): S3Object =
+    prefix(version) / input.idMappingTSV
 
-  lazy val speciesSpecificFASTA: S3Object =
-    prefix / input.speciesSpecificFASTA
+  def speciesSpecificFASTA(version: Version): S3Object =
+    prefix(version) / input.speciesSpecificFASTA
+
+  def everything(version: Version): Set[S3Object] =
+    Set(idMappingTSV(version), speciesSpecificFASTA(version))
 }
