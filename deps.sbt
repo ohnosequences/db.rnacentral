@@ -1,7 +1,7 @@
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
-  "com.github.tototoshi" %% "scala-csv"  % "1.3.5",
-  "ohnosequences"        %% "fastarious" % "0.12.0"
+  "ohnosequences"        %% "aws-scala-tools" % "0.20.0",
+  "com.github.tototoshi" %% "scala-csv"       % "1.3.5",
+  "ohnosequences"        %% "fastarious"      % "0.12.0"
 ) ++ testDependencies
 
 // resolvers := Seq(

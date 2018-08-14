@@ -1,4 +1,4 @@
-package ohnosequences.api
+package ohnosequences.db
 
 package object rnacentral {
 
