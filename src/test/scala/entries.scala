@@ -8,6 +8,9 @@ class Entries extends FunSuite {
 
   test("parse all", ReleaseOnlyTest) {
 
-    assert { allRight { entries entriesFrom data } }
+    Version.all foreach { v =>
+      assert { allRight { entries entriesFrom data.rnacentralData(v) } }
+    }
+
   }
 }
