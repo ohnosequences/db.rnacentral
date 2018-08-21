@@ -7,12 +7,25 @@ import java.io.File
 
 object data {
 
+  def cleanLocalFolder(version: rnacentral.Version): Unit =
+    localFolder(version).listFiles
+      .filter(f => !(f.isDirectory))
+      .foreach { _.delete }
+
+  def localFolder(version: rnacentral.Version): File =
+    new File(s"./data/in/${version}/")
+
   def idMappingLocalFile(version: rnacentral.Version): File =
-    new File(s"./data/in/${version}/${rnacentral.data.input.idMappingTSV}")
+    new File(localFolder(version), rnacentral.data.input.idMappingTSV)
+
+  def idMappingGZLocalFile(version: rnacentral.Version): File =
+    new File(localFolder(version), rnacentral.data.input.idMappingTSVGZ)
 
   def fastaLocalFile(version: rnacentral.Version): File =
-    new File(
-      s"./data/in/${version}/${rnacentral.data.input.speciesSpecificFASTA}")
+    new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTA)
+
+  def fastaGZLocalFile(version: rnacentral.Version): File =
+    new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTAGZ)
 
   def rnacentralData(version: rnacentral.Version): RNACentralData =
     // TODO download and check if files are missing; check otherwise

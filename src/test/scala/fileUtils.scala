@@ -73,8 +73,7 @@ case object utils {
       )
     else {
       val command =
-        s"gzip -c -d ${input.getCanonicalPath}" #|
-          s"tar xf - -C ${outputDir.getCanonicalPath}"
+        s"gzip -d ${input.getCanonicalPath}"
 
       val result = command !
 
@@ -93,19 +92,25 @@ case object utils {
     * Returns `Right(s3Object)` if the upload from `file` to `s3Object`
     * succeeded, ``Left(Error.Upload(msg))`` otherwise.
     */
-  def uploadTo(file: File, s3Object: S3Object): Error.Upload + S3Object =
+  def uploadTo(file: File, s3Object: S3Object): Error.Upload + S3Object = {
+
+    val tm = TransferManagerBuilder
+      .standard()
+      .withS3Client(s3.defaultClient)
+      .build()
+
     scala.util.Try {
-      s3.defaultClient.putObject(
-        s3Object.bucket,
-        s3Object.key,
-        file
-      )
+      tm.upload(
+          s3Object.bucket,
+          s3Object.key,
+          file
+        )
+        .waitForCompletion()
     } match {
-      case scala.util.Success(s) =>
-        Right(s3Object)
-      case scala.util.Failure(e) =>
-        Left(Error.Upload(s"Error uploading$file to $s3Object: ${e.toString}."))
+      case scala.util.Success(s) => Right(s3Object)
+      case scala.util.Failure(e) => Left(Error.Upload(e.toString))
     }
+  }
 
   /**
     * Returns `Right(directory)` if it was possible to create all directories

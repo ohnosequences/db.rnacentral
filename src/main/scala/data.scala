@@ -9,7 +9,7 @@ object Version {
 
   lazy val latest: Version = _9_0
 
-  val all: Set[Version] =
+  lazy val all: Set[Version] =
     Set(_9_0, _7_0)
 
   case object _9_0 extends Version("9.0")

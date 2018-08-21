@@ -3,6 +3,7 @@ package ohnosequences.db.rnacentral.test
 import ohnosequences.db.rnacentral
 import ohnosequences.db.rnacentral._
 import java.io.File
+import java.net.URI
 import ohnosequences.test.ReleaseOnlyTest
 import org.scalatest.FunSuite
 import ohnosequences.awstools.s3, s3.ScalaS3Client
@@ -29,27 +30,41 @@ class MirrorInS3 extends FunSuite {
 
     val version = Version.latest
 
-    val tmpFolder =
-      new File(s"./data/${version.name}/")
+    import utils._
+    import rnacentral.data.input
 
-    val tmpIdMappingTSVGZFile =
-      new File(tmpFolder, rnacentral.data.input.idMappingTSVGZ)
+    data cleanLocalFolder version
 
-    val tmpIdMappingTSVFile =
-      new File(tmpFolder, rnacentral.data.input.idMappingTSV)
+    // ID Mapping
+    assertResult(Right(rnacentral.data.idMappingTSV(version))) {
+      downloadFrom(
+        new URI(input.idMappingTSVGZURL(version)),
+        data.idMappingGZLocalFile(version)
+      ).right
+        .flatMap { file =>
+          uncompressAndExtractTo(file, data.localFolder(version))
+        }
+        .right
+        .flatMap { file =>
+          uploadTo(data.idMappingLocalFile(version),
+                   rnacentral.data.idMappingTSV(version))
+        }
+    }
 
-    val tmpSpeciesSpecificFASTAFile =
-      new File(tmpFolder, rnacentral.data.input.speciesSpecificFASTA)
-
-    // TODO needs code for files and S3 interaction
-    // assert {
-    //   Right(OK) == failFast(
-    //     downloadTo(idMappingTSVGZURL, tmpIdMappingTSVGZFile) >=>
-    //       extractTo(tmpIdMappingTSVGZFile, tmpIdMappingTSVFile) >=>
-    //       uploadTo(tmpIdMappingTSVFile, data idMappingTSV version)
-    //   )
-    // }
-
-    // analogously for FASTA
+    // FASTA
+    assertResult(Right(rnacentral.data.speciesSpecificFASTA(version))) {
+      downloadFrom(
+        new URI(input.speciesSpecificFASTAGZURL(version)),
+        data.fastaGZLocalFile(version)
+      ).right
+        .flatMap { file =>
+          uncompressAndExtractTo(file, data.localFolder(version))
+        }
+        .right
+        .flatMap { file =>
+          uploadTo(data.fastaLocalFile(version),
+                   rnacentral.data.speciesSpecificFASTA(version))
+        }
+    }
   }
 }

@@ -8,7 +8,7 @@ class IDMapping extends FunSuite {
 
   test("well-formed tsv", ReleaseOnlyTest) {
 
-    assert { allRight(IDMapping rows data) }
+    assert { allRight(IDMapping rows data.rnacentralData(Version.latest)) }
   }
 
   test("parse all EntryAnnotations", ReleaseOnlyTest) {
@@ -16,7 +16,7 @@ class IDMapping extends FunSuite {
     assert {
       allRight {
         IDMapping entryAnnotations {
-          iterators right (IDMapping rows data)
+          iterators right (IDMapping rows data.rnacentralData(Version.latest))
         }
       }
     }
