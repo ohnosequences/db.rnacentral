@@ -2,7 +2,6 @@ package ohnosequences.db.rnacentral.test
 
 import ohnosequences.db.rnacentral
 import ohnosequences.db.rnacentral._
-import java.io.File
 import java.net.URI
 import ohnosequences.test.ReleaseOnlyTest
 import org.scalatest.FunSuite
@@ -12,28 +11,9 @@ class MirrorInS3 extends FunSuite {
 
   private val s3Client = ScalaS3Client(s3.defaultClient)
 
-  test("Check previous releases") {
-
-    val vData = Version.all map { v =>
-      (v, rnacentral.data everything v)
-    }
-
-    vData foreach {
-      case (v, objs) =>
-        println(s"checking ${v} data:")
-        println(s"  ${objs}")
-        assert { objs forall s3Client.objectExists _ }
-    }
-  }
-
-  test("Mirror latest release", ReleaseOnlyTest) {
-
-    val version = Version.latest
-
-    import utils._
+  private def mirrorVersion(version: Version): Unit = {
     import rnacentral.data.input
-
-    data cleanLocalFolder version
+    import utils._
 
     // ID Mapping
     assertResult(Right(rnacentral.data.idMappingTSV(version))) {
@@ -65,6 +45,24 @@ class MirrorInS3 extends FunSuite {
           uploadTo(data.fastaLocalFile(version),
                    rnacentral.data.speciesSpecificFASTA(version))
         }
+    }
+  }
+
+  test("Check and mirror all releases", ReleaseOnlyTest) {
+    Version.all foreach { version =>
+      val objs = rnacentral.data everything version
+
+      println(s"Checking ${version} data:")
+      println(s"  ${objs}")
+
+      if (!(objs forall s3Client.objectExists _)) {
+        println(s"  Mirroring $version data...")
+
+        data cleanLocalFolder version
+        mirrorVersion(version)
+
+        println(s"  $version data mirrored.")
+      }
     }
   }
 }
