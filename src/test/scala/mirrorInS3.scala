@@ -48,14 +48,36 @@ class MirrorInS3 extends FunSuite {
     }
   }
 
-  test("Check and mirror all releases", ReleaseOnlyTest) {
+  private def versionExistsInS3(version: Version): Boolean = {
+    val objs = rnacentral.data everything version
+
+    println(s"Checking ${version} data:")
+    println(s"  ${objs}")
+
+    objs forall s3Client.objectExists _
+  }
+
+  private def printlnColor(color: String)(str: String): Unit =
+    println(color + str + Console.RESET)
+
+  private def printlnYellow = printlnColor(Console.YELLOW)(_)
+
+  test("Check all releases - Never fails, just informative") {
+    val notInS3 = Version.all filter { !versionExistsInS3(_) }
+
+    if (!notInS3.isEmpty) {
+      printlnYellow(
+        "The next execution of release-only tests may incur in transfers to S3, as the following versions are not mirrored:"
+      )
+      notInS3 foreach { v =>
+        printlnYellow(s"  * Version $v")
+      }
+    }
+  }
+
+  test("Mirror all releases", ReleaseOnlyTest) {
     Version.all foreach { version =>
-      val objs = rnacentral.data everything version
-
-      println(s"Checking ${version} data:")
-      println(s"  ${objs}")
-
-      if (!(objs forall s3Client.objectExists _)) {
+      if (!versionExistsInS3(version)) {
         println(s"  Mirroring $version data...")
 
         data cleanLocalFolder version
