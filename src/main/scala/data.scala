@@ -7,8 +7,6 @@ sealed abstract class Version(val name: String) {
 }
 object Version {
 
-  lazy val latest: Version = _9_0
-
   lazy val all: Set[Version] =
     Set(_9_0, _8_0, _7_0)
 
