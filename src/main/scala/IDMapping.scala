@@ -21,32 +21,49 @@ case object IDMapping {
     data => (io tsv data.idMapping) map rowFrom
 
   val entryAnnotationsOrErrors: RNACentralData => Iterator[
-    (ParsingError.MalformedRow + ParsingError.UndefinedField) + EntryAnnotation
+    ParsingError.MalformedRow + (ParsingError.UndefinedField + EntryAnnotation)
   ] =
     rows(_).map {
-      case Left(err) => Left(Left(err))
+      case Left(err) => Left(err)
       case Right(row) =>
         entryAnnotationFrom(row) match {
-          case Left(err)         => Left(Right(err))
-          case Right(entryAnnot) => Right(entryAnnot)
+          case Left(err)         => Right(Left(err))
+          case Right(entryAnnot) => Right(Right(entryAnnot))
         }
     }
 
   val entryAnnotationsByRNAIDOrErrors: RNACentralData => Iterator[
-    Set[ParsingError.MalformedRow + ParsingError.UndefinedField] + (RNAID, Set[EntryAnnotation])
+    Set[ParsingError.MalformedRow] +
+      (RNAID, Set[ParsingError.UndefinedField + EntryAnnotation])
   ] =
     data =>
       iterators.segmentsFrom({
-        e: (ParsingError.MalformedRow + ParsingError.UndefinedField) + EntryAnnotation =>
+        e: ParsingError.MalformedRow + (ParsingError.UndefinedField + EntryAnnotation) =>
           e match {
-            case Left(z)   => None
-            case Right(ea) => Some(ea.rnaID)
+            case Left(z)          => None
+            case Right(Left(uf))  => Some(uf.id)
+            case Right(Right(ea)) => Some(ea.rnaID)
           }
       })(entryAnnotationsOrErrors(data)) map {
         case (None, xs) =>
           Left((xs collect { case Left(z) => z }).toSet)
         case (Some(id), xs) =>
-          Right { (id, (xs collect { case Right(z) => z }).toSet) }
+          Right((id, (xs collect { case Right(z) => z }).toSet))
+    }
+
+  val entryAnnotationsByRNAIDOrErrorsMap: RNACentralData => (
+      Set[ParsingError.MalformedRow],
+      Map[RNAID, Set[ParsingError.UndefinedField + EntryAnnotation]]
+  ) =
+    entryAnnotationsByRNAIDOrErrors(_).foldLeft(
+      (Set.empty[ParsingError.MalformedRow],
+       Map.empty[RNAID, Set[ParsingError.UndefinedField + EntryAnnotation]])
+    ) {
+      case ((malformedRows, accMap), possibleEntry) =>
+        possibleEntry match {
+          case Left(malformedRow) => (malformedRows ++ malformedRow, accMap)
+          case Right((id, set))   => (malformedRows, accMap + (id -> set))
+        }
     }
 
   val entryAnnotations

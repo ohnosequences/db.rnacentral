@@ -3,26 +3,31 @@ package ohnosequences.db.rnacentral
 case object entries {
 
   val entriesFrom: RNACentralData => Iterator[Set[Error] + Entry] =
-    data =>
-      (
-        (sequences parseFrom data) zip
-          (IDMapping entryAnnotationsByRNAIDOrErrors data)
-      ).map {
+    data => {
+      val (malformedRows, mappings) =
+        IDMapping entryAnnotationsByRNAIDOrErrorsMap data
 
-        case (_, Left(errs)) =>
-          Left(errs map Error.IDMappingError)
-
-        case ((x @ RNASequence(id1, _), seqAnnots), Right((id2, annots))) =>
-          if (id1 == id2)
-            Right(
-              Entry(
-                rnaSequence = x,
-                sequenceAnnotations = seqAnnots,
-                entryAnnotations = annots
-              )
-            )
-          else
-            Left(Set(Error.DifferentRNAIDs(id1, id2)))
+      (sequences parseFrom data).map {
+        case (x @ RNASequence(id1, _), seqAnnots) =>
+          mappings.get(id1) match {
+            case None =>
+              Left(malformedRows map Error.IDMappingError)
+            case Some(set) =>
+              val entryAnnotations = set collect { case Right(ea) => ea }
+              if (entryAnnotations.isEmpty)
+                Left(
+                  set collect { case Left(err) => err } map Error.IDMappingError
+                )
+              else
+                Right(
+                  Entry(
+                    rnaSequence = x,
+                    sequenceAnnotations = seqAnnots,
+                    entryAnnotations = entryAnnotations
+                  )
+                )
+          }
+      }
     }
 
   sealed abstract class Error
@@ -34,7 +39,7 @@ case object entries {
     ) extends Error
 
     final case class IDMappingError(
-        val error: IDMapping.ParsingError + IDMapping.ParsingError
+        val error: IDMapping.ParsingError
     ) extends Error
   }
 }
