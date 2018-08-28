@@ -17,11 +17,12 @@ case object IDMapping {
       )
   }
 
-  val rows: RNACentralData => Iterator[ParsingError + Row] =
+  val rows: RNACentralData => Iterator[ParsingError.MalformedRow + Row] =
     data => (io tsv data.idMapping) map rowFrom
 
   val entryAnnotationsOrErrors: RNACentralData => Iterator[
-    (ParsingError + ParsingError) + EntryAnnotation] =
+    (ParsingError.MalformedRow + ParsingError.UndefinedField) + EntryAnnotation
+  ] =
     rows(_).map {
       case Left(err) => Left(Left(err))
       case Right(row) =>
@@ -32,11 +33,11 @@ case object IDMapping {
     }
 
   val entryAnnotationsByRNAIDOrErrors: RNACentralData => Iterator[
-    Set[ParsingError + ParsingError] + (RNAID, Set[EntryAnnotation])
+    Set[ParsingError.MalformedRow + ParsingError.UndefinedField] + (RNAID, Set[EntryAnnotation])
   ] =
     data =>
       iterators.segmentsFrom({
-        e: (ParsingError + ParsingError) + EntryAnnotation =>
+        e: (ParsingError.MalformedRow + ParsingError.UndefinedField) + EntryAnnotation =>
           e match {
             case Left(z)   => None
             case Right(ea) => Some(ea.rnaID)
@@ -49,7 +50,7 @@ case object IDMapping {
     }
 
   val entryAnnotations
-    : Iterator[Row] => Iterator[ParsingError + EntryAnnotation] =
+    : Iterator[Row] => Iterator[ParsingError.UndefinedField + EntryAnnotation] =
     _ map entryAnnotationFrom
 
   val entryAnnotationsByRNAID
@@ -62,15 +63,22 @@ case object IDMapping {
   sealed abstract class ParsingError
   case object ParsingError {
 
-    case object generic                                    extends ParsingError
-    final case class UndefinedDatabase(val name: String)   extends ParsingError
-    final case class UndefinedRNAType(val name: String)    extends ParsingError
     final case class MalformedRow(val fields: Seq[String]) extends ParsingError
+
+    sealed abstract class UndefinedField extends ParsingError { val id: RNAID }
+
+    case object UndefinedField {
+
+      final case class UndefinedDatabase(val id: RNAID, val name: String)
+          extends UndefinedField
+      final case class UndefinedRNAType(val id: RNAID, val name: String)
+          extends UndefinedField
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  val rowFrom: Seq[String] => ParsingError + Row = {
+  val rowFrom: Seq[String] => ParsingError.MalformedRow + Row = {
     case Seq(f1, f2, f3, f4, f5, f6) => Right { (f1, f2, f3, f4.toInt, f5, f6) }
     case other                       => Left(ParsingError.MalformedRow(other))
   }
@@ -80,24 +88,27 @@ case object IDMapping {
       (Database from dbName) map { DatabaseEntry(_, id) }
   }
 
-  val entryAnnotationFrom: Row => (ParsingError + EntryAnnotation) = {
+  val entryAnnotationFrom
+    : Row => (ParsingError.UndefinedField + EntryAnnotation) = {
     case (id, dbName, dbID, taxID, rnaType, geneName) =>
       databaseEntryFrom(dbName, dbID)
-        .fold[ParsingError + EntryAnnotation](
-          Left(ParsingError.UndefinedDatabase(dbName))) { dbEntry =>
-          (RNAType from rnaType)
-            .fold[ParsingError + EntryAnnotation](
-              Left(ParsingError.UndefinedRNAType(rnaType))) { rna =>
-              Right(
-                EntryAnnotation(
-                  rnaID = id,
-                  ncbiTaxonomyID = taxID,
-                  databaseEntry = dbEntry,
-                  rnaType = rna,
-                  geneName = if (geneName.isEmpty) None else Some(geneName)
-                )
-              )
-            }
+        .fold[ParsingError.UndefinedField + EntryAnnotation](
+          Left(ParsingError.UndefinedField.UndefinedDatabase(id, dbName))) {
+          dbEntry =>
+            (RNAType from rnaType)
+              .fold[ParsingError.UndefinedField + EntryAnnotation](Left(
+                ParsingError.UndefinedField.UndefinedRNAType(id, rnaType))) {
+                rna =>
+                  Right(
+                    EntryAnnotation(
+                      rnaID = id,
+                      ncbiTaxonomyID = taxID,
+                      databaseEntry = dbEntry,
+                      rnaType = rna,
+                      geneName = if (geneName.isEmpty) None else Some(geneName)
+                    )
+                  )
+              }
         }
   }
 }
