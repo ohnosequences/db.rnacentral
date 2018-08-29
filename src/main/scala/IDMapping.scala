@@ -20,6 +20,14 @@ case object IDMapping {
   val rows: RNACentralData => Iterator[ParsingError.MalformedRow + Row] =
     data => (io tsv data.idMapping) map rowFrom
 
+  /**
+    * Tries to parse each line of the ID mappings from a RNACentralData
+    *
+    * For each line in the file, it returns either a malformed row error, an
+    * undefined field error or the correctly parsed entry annotation.
+    * In the last two cases, an RNA ID is correctly parsed, so some information
+    * can still be retrieved even if some field is undefined.
+    */
   val entryAnnotationsOrErrors: RNACentralData => Iterator[
     ParsingError.MalformedRow + (ParsingError.UndefinedField + EntryAnnotation)
   ] =
@@ -32,6 +40,26 @@ case object IDMapping {
         }
     }
 
+  /**
+    * Tries to parse the ID mappings from a RNACentralData and group all
+    * annotations under the same RNA ID
+    *
+    * The file to parse contains an entry annotation per line, with the entry ID
+    * as one of the fields in the line. The same entry can have several
+    * annotations in the file, each of them in a different, but adjacent, line.
+    * This function groups all of these adjacent lines that correspond to the
+    * same entry.
+    *
+    * All adjacent malformed rows where no ID can be identified are also grouped.
+    *
+    * @return an Iterator that yields either a group of adjacent malformed rows
+    * or a tuple with:
+    *   1. A RNA ID.
+    *   2. A set containing the result of parsing adjacent lines that correspond
+    *   to the RNA ID, each element being either a malformed entry (because of
+    *   undefined fields other than the RNA ID) or a correctly parsed entry
+    *   annotation.
+    */
   val entryAnnotationsByRNAIDOrErrors: RNACentralData => Iterator[
     Set[ParsingError.MalformedRow] +
       (RNAID, Set[ParsingError.UndefinedField + EntryAnnotation])
@@ -51,6 +79,15 @@ case object IDMapping {
           Right((id, (xs collect { case Right(z) => z }).toSet))
     }
 
+  /**
+    * Parse the ID mappings from a RNACentralData and builds both a set
+    * of malformed rows and a map linking each different RNA ID to a set of its
+    * corresponding parsed entries, either an error because of undefined fields
+    * or the correctly parsed entry.
+    *
+    * See [[entryAnnotationsByRNAIDOrErrors]] for more information on the
+    * parsing strategy.
+    */
   val entryAnnotationsByRNAIDOrErrorsMap: RNACentralData => (
       Set[ParsingError.MalformedRow],
       Map[RNAID, Set[ParsingError.UndefinedField + EntryAnnotation]]
