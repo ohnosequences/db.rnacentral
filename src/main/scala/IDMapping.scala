@@ -147,22 +147,22 @@ case object IDMapping {
     case (id, dbName, dbID, taxID, rnaType, geneName) =>
       databaseEntryFrom(dbName, dbID)
         .fold[ParsingError.UndefinedField + EntryAnnotation](
-          Left(ParsingError.UndefinedField.UndefinedDatabase(id, dbName))) {
-          dbEntry =>
-            (RNAType from rnaType)
-              .fold[ParsingError.UndefinedField + EntryAnnotation](Left(
-                ParsingError.UndefinedField.UndefinedRNAType(id, rnaType))) {
-                rna =>
-                  Right(
-                    EntryAnnotation(
-                      rnaID = id,
-                      ncbiTaxonomyID = taxID,
-                      databaseEntry = dbEntry,
-                      rnaType = rna,
-                      geneName = if (geneName.isEmpty) None else Some(geneName)
-                    )
-                  )
-              }
+          Left(ParsingError.UndefinedField.UndefinedDatabase(id, dbName))
+        ) { dbEntry =>
+          (RNAType from rnaType)
+            .fold[ParsingError.UndefinedField + EntryAnnotation](
+              Left(ParsingError.UndefinedField.UndefinedRNAType(id, rnaType))
+            ) { rna =>
+              Right(
+                EntryAnnotation(
+                  rnaID = id,
+                  ncbiTaxonomyID = taxID,
+                  databaseEntry = dbEntry,
+                  rnaType = rna,
+                  geneName = if (geneName.isEmpty) None else Some(geneName)
+                )
+              )
+            }
         }
   }
 }
