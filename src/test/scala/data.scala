@@ -27,12 +27,20 @@ object data {
   def fastaGZLocalFile(version: rnacentral.Version): File =
     new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTAGZ)
 
-  def rnacentralData(version: rnacentral.Version): RNACentralData =
-    // TODO download and check if files are missing; check otherwise
+  def rnacentralData(version: rnacentral.Version): RNACentralData = {
+    val fasta    = fastaLocalFile(version)
+    val mappings = idMappingLocalFile(version)
+
+    if (!fasta.exists)
+      utils.downloadFromS3(rnacentral.data.speciesSpecificFASTA(version), fasta)
+    if (!mappings.exists)
+      utils.downloadFromS3(rnacentral.data.idMappingTSV(version), mappings)
+
     RNACentralData(
       speciesSpecificFasta = fastaLocalFile(version),
       idMapping = idMappingLocalFile(version),
     )
+  }
 
   def fastas(version: Version): Iterator[(RNAID, Seq[FASTA])] =
     rnacentral.sequences fastaByRNAID rnacentralData(version)
