@@ -8,9 +8,11 @@ class Entries extends FunSuite {
 
   test("parse all", ReleaseOnlyTest) {
 
-    val (malformedRows, parsedRows) = entries entriesFrom data
+    Version.all foreach { v =>
+      val (malformedRows, parsedRows) =
+        entries entriesFrom data.rnacentralData(v)
 
-    assert { malformedRows.isEmpty }
-    assert { allRight { parsedRows } }
+      assert { malformedRows.isEmpty && allRight { parsedRows } }
+    }
   }
 }

@@ -2,7 +2,7 @@ package ohnosequences.db.rnacentral.test
 
 import ohnosequences.db.rnacentral
 import ohnosequences.db.rnacentral._
-import java.io.File
+import java.net.URI
 import ohnosequences.test.ReleaseOnlyTest
 import org.scalatest.FunSuite
 import ohnosequences.awstools.s3, s3.ScalaS3Client
@@ -11,45 +11,80 @@ class MirrorInS3 extends FunSuite {
 
   private val s3Client = ScalaS3Client(s3.defaultClient)
 
-  test("Check previous releases") {
+  private def mirrorVersion(version: Version): Unit = {
+    import rnacentral.data.input
+    import utils._
 
-    val vData = Version.all map { v =>
-      (v, rnacentral.data everything v)
+    // ID Mapping
+    assertResult(Right(rnacentral.data.idMappingTSV(version))) {
+      downloadFrom(
+        new URI(input.idMappingTSVGZURL(version)),
+        data.idMappingGZLocalFile(version)
+      ).right
+        .flatMap { file =>
+          uncompressAndExtractTo(file, data.localFolder(version))
+        }
+        .right
+        .flatMap { file =>
+          uploadTo(data.idMappingLocalFile(version),
+                   rnacentral.data.idMappingTSV(version))
+        }
     }
 
-    vData foreach {
-      case (v, objs) =>
-        println(s"checking ${v} data:")
-        println(s"  ${objs}")
-        assert { objs forall s3Client.objectExists _ }
+    // FASTA
+    assertResult(Right(rnacentral.data.speciesSpecificFASTA(version))) {
+      downloadFrom(
+        new URI(input.speciesSpecificFASTAGZURL(version)),
+        data.fastaGZLocalFile(version)
+      ).right
+        .flatMap { file =>
+          uncompressAndExtractTo(file, data.localFolder(version))
+        }
+        .right
+        .flatMap { file =>
+          uploadTo(data.fastaLocalFile(version),
+                   rnacentral.data.speciesSpecificFASTA(version))
+        }
     }
   }
 
-  test("Mirror latest release", ReleaseOnlyTest) {
+  private def versionExistsInS3(version: Version): Boolean = {
+    val objs = rnacentral.data everything version
 
-    val version = Version.latest
+    println(s"Checking ${version} data:")
+    println(s"  ${objs}")
 
-    val tmpFolder =
-      new File(s"./data/${version.name}/")
+    objs forall s3Client.objectExists _
+  }
 
-    val tmpIdMappingTSVGZFile =
-      new File(tmpFolder, rnacentral.data.input.idMappingTSVGZ)
+  private def printlnColor(color: String)(str: String): Unit =
+    println(color + str + Console.RESET)
 
-    val tmpIdMappingTSVFile =
-      new File(tmpFolder, rnacentral.data.input.idMappingTSV)
+  private def printlnYellow = printlnColor(Console.YELLOW)(_)
 
-    val tmpSpeciesSpecificFASTAFile =
-      new File(tmpFolder, rnacentral.data.input.speciesSpecificFASTA)
+  test("Check all releases - Never fails, just informative") {
+    val notInS3 = Version.all filter { !versionExistsInS3(_) }
 
-    // TODO needs code for files and S3 interaction
-    // assert {
-    //   Right(OK) == failFast(
-    //     downloadTo(idMappingTSVGZURL, tmpIdMappingTSVGZFile) >=>
-    //       extractTo(tmpIdMappingTSVGZFile, tmpIdMappingTSVFile) >=>
-    //       uploadTo(tmpIdMappingTSVFile, data idMappingTSV version)
-    //   )
-    // }
+    if (!notInS3.isEmpty) {
+      printlnYellow(
+        "The next execution of release-only tests may incur in transfers to S3, as the following versions are not mirrored:"
+      )
+      notInS3 foreach { v =>
+        printlnYellow(s"  * Version $v")
+      }
+    }
+  }
 
-    // analogously for FASTA
+  test("Mirror all releases", ReleaseOnlyTest) {
+    Version.all foreach { version =>
+      if (!versionExistsInS3(version)) {
+        println(s"  Mirroring $version data...")
+
+        data cleanLocalFolder version
+        mirrorVersion(version)
+
+        println(s"  $version data mirrored.")
+      }
+    }
   }
 }

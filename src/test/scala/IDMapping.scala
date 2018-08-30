@@ -6,19 +6,24 @@ import ohnosequences.db.rnacentral._
 
 class IDMapping extends FunSuite {
 
-  test("well-formed tsv", ReleaseOnlyTest) {
+  test("parse all EntryAnnotations", ReleaseOnlyTest) {
+    Version.all foreach { version =>
+      def entries =
+        IDMapping entryAnnotations (
+          iterators right (
+            IDMapping rows data.rnacentralData(version)
+          )
+        )
 
-    assert { allRight(IDMapping rows data) }
+      assert { allRight(entries) }
+    }
+
   }
 
-  test("parse all EntryAnnotations", ReleaseOnlyTest) {
-
-    assert {
-      allRight {
-        IDMapping entryAnnotations {
-          iterators right (IDMapping rows data)
-        }
-      }
+  test("well-formed tsv", ReleaseOnlyTest) {
+    Version.all foreach { version =>
+      assert { allRight(IDMapping rows data.rnacentralData(version)) }
     }
+
   }
 }

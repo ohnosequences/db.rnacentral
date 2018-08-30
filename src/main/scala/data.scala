@@ -7,10 +7,8 @@ sealed abstract class Version(val name: String) {
 }
 object Version {
 
-  lazy val latest: Version = _9_0
-
-  val all: Set[Version] =
-    Set(_9_0, _7_0)
+  lazy val all: Set[Version] =
+    Set(_9_0, _8_0, _7_0)
 
   case object _9_0 extends Version("9.0")
   case object _8_0 extends Version("8.0")

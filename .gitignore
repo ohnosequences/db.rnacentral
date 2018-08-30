@@ -17,3 +17,6 @@ project/target/
 .idea*
 /.gtm/
 .vscode*
+
+# tmp files
+data/
