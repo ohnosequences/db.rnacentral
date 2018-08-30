@@ -1,0 +1,11 @@
+# 0.12.2
+
+Up to RNACentral v7, the sequences and ID mappings files were aligned. From v8, the ID mappings file is no longer ordered.
+
+This release fixes the issues caused by this change, modifying the code to take this into account and removing the tests that checked that the files were actually aligned.
+
+However, this fix has increased both the time and the memory needed to run the `ReleaseOnly` tests, as the whole ID mappings is now stored in-memory as a map linking the RNA IDs with the annotations.
+
+For more information, see [pull request #46][pr46].
+
+[pr46]: https://github.com/ohnosequences/db.rnacentral/pull/46

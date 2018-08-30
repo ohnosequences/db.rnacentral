@@ -10,7 +10,9 @@ class Sequences extends FunSuite {
     Version.all foreach { version =>
       data.fastas(version) forall {
         case (id, fastas) =>
-          fastas.nonEmpty && (fastas forall { sequences.fasta.rnaID(_) == id })
+          assert {
+            fastas.nonEmpty && (fastas forall { sequences.fasta.rnaID(_) == id})
+          }
       }
     }
   }
