@@ -12,7 +12,7 @@ class Entries extends FunSuite {
       val (malformedRows, parsedRows) =
         entries entriesFrom data.rnacentralData(v)
 
-      assert { allRight { malformedRows.isEmpty && allRight { parsedRows } } }
+      assert { malformedRows.isEmpty && allRight { parsedRows } }
     }
   }
 }

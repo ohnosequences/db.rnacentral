@@ -8,10 +8,10 @@ class Sequences extends FunSuite {
 
   test("parsing and integrity", ReleaseOnlyTest) {
     Version.all foreach { version =>
-      data.fastas(version) forall {
+      data.fastas(version) foreach {
         case (id, fastas) =>
           assert {
-            fastas.nonEmpty && (fastas forall { sequences.fasta.rnaID(_) == id})
+            fastas.nonEmpty && (fastas forall { sequences.fasta.rnaID(_) == id })
           }
       }
     }
