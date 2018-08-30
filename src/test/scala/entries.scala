@@ -8,6 +8,9 @@ class Entries extends FunSuite {
 
   test("parse all", ReleaseOnlyTest) {
 
-    assert { allRight { entries entriesFrom data } }
+    val (malformedRows, parsedRows) = entries entriesFrom data
+
+    assert { malformedRows.isEmpty }
+    assert { allRight { parsedRows } }
   }
 }
