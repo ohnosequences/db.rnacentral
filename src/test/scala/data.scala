@@ -31,10 +31,11 @@ object data {
     val fasta    = fastaLocalFile(version)
     val mappings = idMappingLocalFile(version)
 
+    // TODO: Check that the download is correct
     if (!fasta.exists)
-      utils.downloadFromS3(rnacentral.data.speciesSpecificFASTA(version), fasta)
+      getCheckedFile(rnacentral.data.speciesSpecificFASTA(version), fasta)
     if (!mappings.exists)
-      utils.downloadFromS3(rnacentral.data.idMappingTSV(version), mappings)
+      getCheckedFile(rnacentral.data.idMappingTSV(version), mappings)
 
     RNACentralData(
       speciesSpecificFasta = fastaLocalFile(version),
