@@ -2,48 +2,58 @@ package ohnosequences.db.rnacentral.test
 
 import ohnosequences.db.rnacentral
 import ohnosequences.db.rnacentral._
-import java.net.URI
+import java.net.URL
 import ohnosequences.test.ReleaseOnlyTest
 import org.scalatest.FunSuite
-import ohnosequences.awstools.s3, s3.ScalaS3Client
+import ohnosequences.files.{gzip, remote, tar}
+import java.io.File
 
 class MirrorInS3 extends FunSuite {
 
-  private val s3Client = ScalaS3Client(s3.defaultClient)
-
   private def mirrorVersion(version: Version): Unit = {
     import rnacentral.data.input
-    import utils._
 
     // ID Mapping
     assertResult(Right(rnacentral.data.idMappingTSV(version))) {
-      downloadFrom(
-        new URI(input.idMappingTSVGZURL(version)),
-        data.idMappingGZLocalFile(version)
-      ).right
+      remote
+        .download(
+          new URL(input.idMappingTSVGZURL(version)),
+          data.idMappingGZLocalFile(version)
+        )
         .flatMap { file =>
-          uncompressAndExtractTo(file, data.localFolder(version))
-        }
-        .right
-        .flatMap { file =>
-          uploadTo(data.idMappingLocalFile(version),
-                   rnacentral.data.idMappingTSV(version))
+          val tmpFile = File.createTempFile(file.getName, "uncompressed")
+          tmpFile.deleteOnExit
+
+          gzip.uncompress(file, tmpFile).flatMap { uncompressed =>
+            tar.extract(uncompressed, data.localFolder(version)).flatMap { _ =>
+              paranoidPutFile(
+                data.idMappingLocalFile(version),
+                rnacentral.data.idMappingTSV(version)
+              )
+            }
+          }
         }
     }
 
     // FASTA
     assertResult(Right(rnacentral.data.speciesSpecificFASTA(version))) {
-      downloadFrom(
-        new URI(input.speciesSpecificFASTAGZURL(version)),
-        data.fastaGZLocalFile(version)
-      ).right
+      remote
+        .download(
+          new URL(input.speciesSpecificFASTAGZURL(version)),
+          data.fastaGZLocalFile(version)
+        )
         .flatMap { file =>
-          uncompressAndExtractTo(file, data.localFolder(version))
-        }
-        .right
-        .flatMap { file =>
-          uploadTo(data.fastaLocalFile(version),
-                   rnacentral.data.speciesSpecificFASTA(version))
+          val tmpFile = File.createTempFile(file.getName, "uncompressed")
+          tmpFile.deleteOnExit
+
+          gzip.uncompress(file, tmpFile).flatMap { uncompressed =>
+            tar.extract(uncompressed, data.localFolder(version)).flatMap { _ =>
+              paranoidPutFile(
+                data.fastaLocalFile(version),
+                rnacentral.data.speciesSpecificFASTA(version)
+              )
+            }
+          }
         }
     }
   }
@@ -54,7 +64,9 @@ class MirrorInS3 extends FunSuite {
     println(s"Checking ${version} data:")
     println(s"  ${objs}")
 
-    objs forall s3Client.objectExists _
+    objs forall { id =>
+      s3Client.doesObjectExist(id.getBucket, id.getKey)
+    }
   }
 
   private def printlnColor(color: String)(str: String): Unit =
