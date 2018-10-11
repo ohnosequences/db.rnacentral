@@ -4,6 +4,7 @@ import ohnosequences.db.rnacentral
 import ohnosequences.fastarious.fasta._
 import rnacentral.{EntryAnnotation, RNACentralData, RNAID, Version, iterators}
 import java.io.File
+import ohnosequences.s3.{Error => S3Error}
 
 object data {
 
@@ -27,31 +28,30 @@ object data {
   def fastaGZLocalFile(version: rnacentral.Version): File =
     new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTAGZ)
 
-  def rnacentralData(version: rnacentral.Version): RNACentralData = {
-    val fasta    = fastaLocalFile(version)
-    val mappings = idMappingLocalFile(version)
+  def rnacentralData(version: rnacentral.Version): S3Error + RNACentralData = {
+    val fasta      = fastaLocalFile(version)
+    val fastaS3    = rnacentral.data.idMappingTSV(version)
+    val mappings   = idMappingLocalFile(version)
+    val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
 
-    // TODO: Check that the download is correct
-    if (!fasta.exists)
-      getCheckedFile(rnacentral.data.speciesSpecificFASTA(version), fasta)
-    if (!mappings.exists)
-      getCheckedFile(rnacentral.data.idMappingTSV(version), mappings)
-
-    RNACentralData(
-      speciesSpecificFasta = fastaLocalFile(version),
-      idMapping = idMappingLocalFile(version),
-    )
+    getCheckedFileIfDifferent(mappingsS3, mappings)
+      .flatMap(_ => getCheckedFileIfDifferent(fastaS3, fasta))
+      .map(_ => RNACentralData(fasta, mappings))
   }
 
-  def fastas(version: Version): Iterator[(RNAID, Seq[FASTA])] =
-    rnacentral.sequences fastaByRNAID rnacentralData(version)
+  def fastas(version: Version): S3Error + Iterator[(RNAID, Seq[FASTA])] =
+    rnacentralData(version).map(rnacentral.sequences.fastaByRNAID)
 
-  def annotations(version: Version): Iterator[(RNAID, Set[EntryAnnotation])] =
-    rnacentral.IDMapping entryAnnotationsByRNAID {
-      iterators right {
-        rnacentral.IDMapping entryAnnotations (
-          iterators right (rnacentral.IDMapping rows rnacentralData(version))
-        )
+  def annotations(
+      version: Version
+  ): S3Error + Iterator[(RNAID, Set[EntryAnnotation])] =
+    rnacentralData(version).map { rnacentralData =>
+      rnacentral.IDMapping entryAnnotationsByRNAID {
+        iterators.right {
+          rnacentral.IDMapping entryAnnotations (
+            iterators.right(rnacentral.IDMapping rows rnacentralData)
+          )
+        }
       }
     }
 }
