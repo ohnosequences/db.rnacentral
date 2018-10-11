@@ -8,6 +8,8 @@ import ohnosequences.db.rnacentral
 
 package object test {
 
+  type +[A, B] = Either[A, B]
+
   def allRight[X, Y]: Iterator[X + Y] => Boolean =
     _.forall {
       case Left(_)  => false
@@ -32,4 +34,7 @@ package object test {
     request.paranoidPutFile(s3Client)(file, s3Obj, partSize5MiB)(
       rnacentral.data.hashingFunction
     )
+
+  private[test] def getCheckedFileIfDifferent(s3Obj: S3ObjectId, file: File) =
+    request.getCheckedFileIfDifferent(s3Client)(s3Obj, file)
 }
