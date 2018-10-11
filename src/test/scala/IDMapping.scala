@@ -3,6 +3,7 @@ package ohnosequences.db.rnacentral.test
 import org.scalatest.FunSuite
 import ohnosequences.test._
 import ohnosequences.db.rnacentral._
+import org.scalatest.EitherValues._
 
 class IDMapping extends FunSuite {
 
@@ -11,7 +12,7 @@ class IDMapping extends FunSuite {
       def entries =
         IDMapping entryAnnotations (
           iterators right (
-            IDMapping rows data.rnacentralData(version)
+            IDMapping.rows(data.rnacentralData(version).right.value)
           )
         )
 
@@ -22,8 +23,9 @@ class IDMapping extends FunSuite {
 
   test("well-formed tsv", ReleaseOnlyTest) {
     Version.all foreach { version =>
-      assert { allRight(IDMapping rows data.rnacentralData(version)) }
+      assert {
+        allRight(IDMapping.rows(data.rnacentralData(version).right.value))
+      }
     }
-
   }
 }
