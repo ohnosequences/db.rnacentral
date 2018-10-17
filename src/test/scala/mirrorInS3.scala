@@ -65,7 +65,7 @@ class MirrorInS3 extends FunSuite {
     println(s"  ${objs}")
 
     objs forall { id =>
-      s3Client.doesObjectExist(id.getBucket, id.getKey)
+      s3Client.doesObjectExist(id.bucket, id.key)
     }
   }
 

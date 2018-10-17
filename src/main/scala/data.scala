@@ -1,6 +1,6 @@
 package ohnosequences.db.rnacentral
 
-import com.amazonaws.services.s3.model.S3ObjectId
+import ohnosequences.s3.{S3Object, s3AddressFromString}
 import ohnosequences.files.digest.DigestFunction
 
 sealed abstract class Version(val name: String) {
@@ -45,26 +45,17 @@ case object data {
       s"${releaseURL(version)}/sequences/${speciesSpecificFASTAGZ}"
   }
 
-  def prefix(version: Version): String => S3ObjectId =
+  def prefix(version: Version): String => S3Object =
     file =>
-      new S3ObjectId(
-        "resources.ohnosequences.com",
-        List(
-          "ohnosequences",
-          "db",
-          "rnacentral",
-          version.toString,
-          file
-        ).mkString("/")
-    )
+      s3"resources.ohnosequences.com" / "ohnosequences" / "db" / "rnacentral" / version.toString / file
 
-  def idMappingTSV(version: Version): S3ObjectId =
+  def idMappingTSV(version: Version): S3Object =
     prefix(version)(input.idMappingTSV)
 
-  def speciesSpecificFASTA(version: Version): S3ObjectId =
+  def speciesSpecificFASTA(version: Version): S3Object =
     prefix(version)(input.speciesSpecificFASTA)
 
-  def everything(version: Version): Set[S3ObjectId] =
+  def everything(version: Version): Set[S3Object] =
     Set(idMappingTSV(version), speciesSpecificFASTA(version))
 
   val hashingFunction: DigestFunction = DigestFunction.SHA512
