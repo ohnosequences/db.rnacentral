@@ -7,6 +7,29 @@ import ohnosequences.s3.S3Object
 
 case object release {
 
+  /**
+    * Perform the actual mirror of RNACentral, overwriting if necessary
+    *
+    * For [[data.input.idMappingTSVGZURL]], [[data.idMappingTSV]] is uploaded to
+    * S3. For [[data.input.speciesSpecificFASTAGZURL]],
+    * [[data.speciesSpecificFASTA]] is uploaded to S3.
+    *
+    * The process to mirror each of those files is:
+    *   1. Download the `.tar.gz` file from [[data.input.releaseURL]]
+    *   2. Uncompress to obtain the `.tar` file
+    *   3. Extract the archive to obtain all the files
+    *   4. Upload the file ([[data.input.idMappingTSV]] and
+    *   [[data.input.speciesSpecificFASTA]] resp.) to the folder [[data.prefix]].
+    *
+    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
+    * S3 objects if everything worked as expected or with a Left(error) if an
+    * error occurred. Several things could go wrong in this process; namely:
+    *   - The input files could not be downloaded
+    *   - The input files could not be uncompressed or extracted
+    *   - The upload process failed, either because you have no permissions to
+    *   upload the objects or because some error occured during the upload
+    *   itself.
+    */
   private def mirrorVersion(
       version: Version,
       localFolder: File
@@ -61,18 +84,52 @@ case object release {
     }
   }
 
-  private def someObjectExists(version: Version): Option[S3Object] =
+  /**
+    * Find any object under [[data.prefix(version)]] that could be overwritten
+    * by [[mirrorNewVersion]].
+    *
+    * @param version is the version that specifies the S3 folder
+    *
+    * @return Some(object) with the first object found under
+    * [[data.prefix(version)]] if any, None otherwise.
+    */
+  private def findObjectInS3(version: Version): Option[S3Object] =
     data
       .everything(version)
       .find(
         obj => s3Helpers.objectExists(obj).fold(_ => true, identity)
       )
 
+  /**
+    * Try to mirror a new version of RNACentral to S3.
+    *
+    * This method tries to download [[data.input.releaseURL]], uncompress it,
+    * extract it and upload the corresponding files to the objects defined in
+    * [[data.idMappingTSV]] and [[data.speciesSpecificFASTA]].
+    *
+    * It does so if and only if none of those two objects already exist in S3.
+    * If any of them exists, nothing is downloaded nor uploaded and an error is
+    * returned.
+    *
+    * @param version is the new version that wants to be released
+    * @param localFolder is the localFolder where the downloaded files will be
+    * stored.
+    *
+    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
+    * S3 objects if everything worked as expected or with a Left(error) if an
+    * error occurred. Several things could go wrong in this process; namely:
+    *   - The objects already exist in S3
+    *   - The input file could not be downloaded
+    *   - The input file could not be uncompressed or extracted
+    *   - The upload process failed, either because you have no permissions to
+    *   upload to the objects under [[data.prefix]] or because some error
+    *   occured during the upload itself.
+    */
   def mirrorNewVersion(
       version: Version,
       localFolder: File
   ): Error + Set[S3Object] =
-    someObjectExists(version).fold(mirrorVersion(version, localFolder)) { obj =>
+    findObjectInS3(version).fold(mirrorVersion(version, localFolder)) { obj =>
       Left(Error.S3ObjectExists(obj))
     }
 }
