@@ -1,7 +1,7 @@
 package ohnosequences.db.rnacentral
 
 import java.net.URL
-import ohnosequences.files.{gzip, remote}
+import ohnosequences.files.{directory, gzip, remote}
 import java.io.File
 import ohnosequences.s3.S3Object
 
@@ -58,23 +58,31 @@ case object release {
       }
     }
 
-    // IDMappings
-    mirrorFile(
-      url = new URL(data.input.idMappingTSVGZURL(version)),
-      gzFile = data.local.idMappingGZFile(version, localFolder),
-      file = data.local.idMappingFile(version, localFolder),
-      s3Obj = data.idMappingTSV(version)
-    ).flatMap { idMappingsS3 =>
-      // FASTA
-      mirrorFile(
-        url = new URL(data.input.speciesSpecificFASTAGZURL(version)),
-        gzFile = data.local.fastaGZFile(version, localFolder),
-        file = data.local.fastaFile(version, localFolder),
-        s3Obj = data.speciesSpecificFASTA(version)
-      ).map { fastaS3 =>
-        Set(idMappingsS3, fastaS3)
+    directory
+      .createDirectory(localFolder)
+      .left
+      .map(Error.FileError)
+      .right
+      .flatMap { localFolder =>
+        // IDMappings
+        mirrorFile(
+          url = new URL(data.input.idMappingTSVGZURL(version)),
+          gzFile = data.local.idMappingGZFile(version, localFolder),
+          file = data.local.idMappingFile(version, localFolder),
+          s3Obj = data.idMappingTSV(version)
+        ).flatMap { idMappingsS3 =>
+          // FASTA
+          mirrorFile(
+            url = new URL(data.input.speciesSpecificFASTAGZURL(version)),
+            gzFile = data.local.fastaGZFile(version, localFolder),
+            file = data.local.fastaFile(version, localFolder),
+            s3Obj = data.speciesSpecificFASTA(version)
+          ).map { fastaS3 =>
+            Set(idMappingsS3, fastaS3)
+          }
+        }
       }
-    }
+
   }
 
   /**
