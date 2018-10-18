@@ -10,7 +10,7 @@ class Entries extends FunSuite {
   test("parse all", ReleaseOnlyTest) {
 
     Version.all foreach { v =>
-      data.rnacentralData(v).left.map { err =>
+      data.rnacentralData(v).left.foreach { err =>
         println(err.msg)
       }
       val (malformedRows, parsedRows) =
