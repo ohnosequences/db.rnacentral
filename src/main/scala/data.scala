@@ -10,11 +10,9 @@ sealed abstract class Version(val name: String) {
 object Version {
 
   lazy val all: Set[Version] =
-    Set(_9_0, _8_0, _7_0)
+    Set(_10_0)
 
-  case object _9_0 extends Version("9.0")
-  case object _8_0 extends Version("8.0")
-  case object _7_0 extends Version("7.0")
+  case object _10_0 extends Version("10.0")
 }
 
 case object data {
@@ -63,7 +61,7 @@ case object data {
 
   def prefix(version: Version): String => S3Object =
     file =>
-      s3"resources.ohnosequences.com" / "ohnosequences" / "db" / "rnacentral" / version.toString / file
+      s3"resources.ohnosequences.com" / "ohnosequences" / "db" / "rnacentral" / "unstable" / version.toString / file
 
   def idMappingTSV(version: Version): S3Object =
     prefix(version)(input.idMappingTSV)
