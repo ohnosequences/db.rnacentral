@@ -1,7 +1,7 @@
 package ohnosequences.db.rnacentral
 
 import java.net.URL
-import ohnosequences.files.{gzip, remote, tar}
+import ohnosequences.files.{gzip, remote}
 import java.io.File
 import ohnosequences.s3.S3Object
 
@@ -15,9 +15,8 @@ case object release {
     * [[data.speciesSpecificFASTA]] is uploaded to S3.
     *
     * The process to mirror each of those files is:
-    *   1. Download the `.tar.gz` file from [[data.input.releaseURL]]
-    *   2. Uncompress to obtain the `.tar` file
-    *   3. Extract the archive to obtain all the files
+    *   1. Download the `.gz` file from [[data.input.releaseURL]]
+    *   2. Uncompress to obtain the file
     *   4. Upload the file ([[data.input.idMappingTSV]] and
     *   [[data.input.speciesSpecificFASTA]] resp.) to the folder [[data.prefix]].
     *
@@ -25,7 +24,7 @@ case object release {
     * S3 objects if everything worked as expected or with a Left(error) if an
     * error occurred. Several things could go wrong in this process; namely:
     *   - The input files could not be downloaded
-    *   - The input files could not be uncompressed or extracted
+    *   - The input files could not be uncompressed
     *   - The upload process failed, either because you have no permissions to
     *   upload the objects or because some error occured during the upload
     *   itself.
@@ -41,17 +40,11 @@ case object release {
         file: File,
         s3Obj: S3Object
     ): Error + S3Object = {
-      // Auxiliary file for uncompressing the .gz file
-      val tmpFile = File.createTempFile(file.getName, "uncompressed")
-      tmpFile.deleteOnExit
-
-      // Try to download, uncompress and extract the file
+      // Try to download and uncompress the file
       val maybeFile =
         remote
           .download(url, gzFile)
-          .flatMap(file => gzip.uncompress(file, tmpFile))
-          .flatMap(archive => tar.extract(archive, localFolder))
-          .map(_ => file)
+          .flatMap(gzFile => gzip.uncompress(gzFile, file))
 
       // If everything worked as expected, try to upload the file to S3
       // Otherwise, adapt the File error to this package's Error.
@@ -103,8 +96,8 @@ case object release {
   /**
     * Try to mirror a new version of RNACentral to S3.
     *
-    * This method tries to download [[data.input.releaseURL]], uncompress it,
-    * extract it and upload the corresponding files to the objects defined in
+    * This method tries to download [[data.input.releaseURL]], uncompress it
+    * and upload the corresponding files to the objects defined in
     * [[data.idMappingTSV]] and [[data.speciesSpecificFASTA]].
     *
     * It does so if and only if none of those two objects already exist in S3.
@@ -120,7 +113,7 @@ case object release {
     * error occurred. Several things could go wrong in this process; namely:
     *   - The objects already exist in S3
     *   - The input file could not be downloaded
-    *   - The input file could not be uncompressed or extracted
+    *   - The input file could not be uncompressed
     *   - The upload process failed, either because you have no permissions to
     *   upload to the objects under [[data.prefix]] or because some error
     *   occured during the upload itself.
