@@ -2,6 +2,7 @@ package ohnosequences.db.rnacentral
 
 import ohnosequences.s3.{S3Object, s3AddressFromString}
 import ohnosequences.files.digest.DigestFunction
+import java.io.File
 
 sealed abstract class Version(val name: String) {
   override final def toString: String = name
@@ -43,6 +44,21 @@ case object data {
 
     def speciesSpecificFASTAGZURL(version: Version): String =
       s"${releaseURL(version)}/sequences/${speciesSpecificFASTAGZ}"
+  }
+
+  case object local {
+
+    def idMappingFile(version: Version, localFolder: File): File =
+      new File(localFolder, input.idMappingTSV)
+
+    def idMappingGZFile(version: Version, localFolder: File): File =
+      new File(localFolder, input.idMappingTSVGZ)
+
+    def fastaFile(version: Version, localFolder: File): File =
+      new File(localFolder, input.speciesSpecificFASTA)
+
+    def fastaGZFile(version: Version, localFolder: File): File =
+      new File(localFolder, input.speciesSpecificFASTAGZ)
   }
 
   def prefix(version: Version): String => S3Object =

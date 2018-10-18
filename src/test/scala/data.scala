@@ -5,6 +5,7 @@ import ohnosequences.fastarious.fasta._
 import rnacentral.{EntryAnnotation, RNACentralData, RNAID, Version, iterators}
 import java.io.File
 import ohnosequences.s3.{Error => S3Error}
+import rnacentral.s3Helpers.getCheckedFileIfDifferent
 
 object data {
 
@@ -16,22 +17,12 @@ object data {
   def localFolder(version: rnacentral.Version): File =
     new File(s"./data/in/${version}/")
 
-  def idMappingLocalFile(version: rnacentral.Version): File =
-    new File(localFolder(version), rnacentral.data.input.idMappingTSV)
-
-  def idMappingGZLocalFile(version: rnacentral.Version): File =
-    new File(localFolder(version), rnacentral.data.input.idMappingTSVGZ)
-
-  def fastaLocalFile(version: rnacentral.Version): File =
-    new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTA)
-
-  def fastaGZLocalFile(version: rnacentral.Version): File =
-    new File(localFolder(version), rnacentral.data.input.speciesSpecificFASTAGZ)
-
   def rnacentralData(version: rnacentral.Version): S3Error + RNACentralData = {
-    val fasta      = fastaLocalFile(version)
+    val folder = localFolder(version)
+
+    val fasta      = rnacentral.data.local.fastaFile(version, folder)
     val fastaS3    = rnacentral.data.idMappingTSV(version)
-    val mappings   = idMappingLocalFile(version)
+    val mappings   = rnacentral.data.local.idMappingFile(version, folder)
     val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
 
     getCheckedFileIfDifferent(mappingsS3, mappings)
