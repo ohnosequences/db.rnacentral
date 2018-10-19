@@ -11,8 +11,8 @@ import java.io.File
   */
 private[rnacentral] case object s3Helpers {
 
-  val s3Client     = AmazonS3ClientBuilder.standard().build()
-  val partSize5MiB = 5 * 1024 * 1024
+  lazy val s3Client = AmazonS3ClientBuilder.standard().build()
+  val partSize5MiB  = 5 * 1024 * 1024
 
   def getCheckedFile(s3Obj: S3Object, file: File) =
     request.getCheckedFile(s3Client)(s3Obj, file)
