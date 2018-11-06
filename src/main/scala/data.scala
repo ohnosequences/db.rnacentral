@@ -7,12 +7,17 @@ import java.io.File
 sealed abstract class Version(val name: String) {
   override final def toString: String = name
 }
+
 object Version {
 
   lazy val all: Set[Version] =
-    Set(_10_0)
+    Set(_9_0, _10_0)
+
+  case object _9_0 extends Version("9.0")
+  type _9_0 = _9_0.type
 
   case object _10_0 extends Version("10.0")
+  type _10_0 = _10_0.type
 }
 
 case object data {
@@ -59,9 +64,27 @@ case object data {
       new File(localFolder, input.speciesSpecificFASTAGZ)
   }
 
-  def prefix(version: Version): String => S3Object =
-    file =>
-      s3"resources.ohnosequences.com" / "ohnosequences" / "db" / "rnacentral" / "unstable" / version.toString / file
+  def prefix(version: Version): String => S3Object = {
+    val prefix = version match {
+      case version: Version._9_0 =>
+        s3"resources.ohnosequences.com" /
+          "ohnosequences" /
+          "db" /
+          "rnacentral" /
+          version.toString
+
+      case version: Version._10_0 =>
+        s3"resources.ohnosequences.com" /
+          "ohnosequences" /
+          "db" /
+          "rnacentral" /
+          "unstable" /
+          version.toString
+    }
+
+    file: String =>
+      prefix / file
+  }
 
   def idMappingTSV(version: Version): S3Object =
     prefix(version)(input.idMappingTSV)
