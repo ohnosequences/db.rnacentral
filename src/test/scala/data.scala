@@ -9,11 +9,6 @@ import rnacentral.s3Helpers.getCheckedFileIfDifferent
 
 object data {
 
-  def cleanLocalFolder(version: rnacentral.Version): Unit =
-    localFolder(version).listFiles
-      .filter(f => !(f.isDirectory))
-      .foreach { _.delete }
-
   def localFolder(version: rnacentral.Version): File =
     new File(s"./data/in/${version}/")
 
