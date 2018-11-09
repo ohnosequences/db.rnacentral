@@ -83,16 +83,38 @@ case object data {
 
   case object local {
 
-    def idMappingFile(version: Version, localFolder: File): File =
+    /**
+      * Local file used when downloading the id mapping file from RNACentral FTP
+      *
+      * @param localFolder is the directory where the file will be created
+      */
+    def idMappingFile(localFolder: File): File =
       new File(localFolder, input.idMappingTSV)
 
-    def idMappingGZFile(version: Version, localFolder: File): File =
+    /**
+      * Local file used when downloading the gzipped id mapping from RNACentral
+      * FTP
+      *
+      * @param localFolder is the directory where the file will be created
+      */
+    def idMappingGZFile(localFolder: File): File =
       new File(localFolder, input.idMappingTSVGZ)
 
-    def fastaFile(version: Version, localFolder: File): File =
+    /**
+      * Local file used when downloading the fasta file from RNACentral FTP
+      *
+      * @param localFolder is the directory where the file will be created
+      */
+    def fastaFile(localFolder: File): File =
       new File(localFolder, input.speciesSpecificFASTA)
 
-    def fastaGZFile(version: Version, localFolder: File): File =
+    /**
+      * Local file used when downloading the gzipped fasta file from RNACentral
+      * FTP
+      *
+      * @param localFolder is the directory where the file will be created
+      */
+    def fastaGZFile(localFolder: File): File =
       new File(localFolder, input.speciesSpecificFASTAGZ)
   }
 

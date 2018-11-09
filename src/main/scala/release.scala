@@ -68,15 +68,15 @@ case object release {
         // IDMappings
         mirrorFile(
           url = new URL(data.input.idMappingTSVGZURL(version)),
-          gzFile = data.local.idMappingGZFile(version, localFolder),
-          file = data.local.idMappingFile(version, localFolder),
+          gzFile = data.local.idMappingGZFile(localFolder),
+          file = data.local.idMappingFile(localFolder),
           s3Obj = data.idMappingTSV(version)
         ).flatMap { idMappingsS3 =>
           // FASTA
           mirrorFile(
             url = new URL(data.input.speciesSpecificFASTAGZURL(version)),
-            gzFile = data.local.fastaGZFile(version, localFolder),
-            file = data.local.fastaFile(version, localFolder),
+            gzFile = data.local.fastaGZFile(localFolder),
+            file = data.local.fastaFile(localFolder),
             s3Obj = data.speciesSpecificFASTA(version)
           ).map { fastaS3 =>
             Set(idMappingsS3, fastaS3)

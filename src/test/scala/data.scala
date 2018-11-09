@@ -16,9 +16,9 @@ object data {
       version: rnacentral.Version): S3Error + RNACentralData = {
     val folder = localFolder(version)
 
-    val fasta      = rnacentral.data.local.fastaFile(version, folder)
+    val fasta      = rnacentral.data.local.fastaFile(folder)
     val fastaS3    = rnacentral.data.idMappingTSV(version)
-    val mappings   = rnacentral.data.local.idMappingFile(version, folder)
+    val mappings   = rnacentral.data.local.idMappingFile(folder)
     val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
 
     version match {
