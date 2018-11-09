@@ -55,7 +55,11 @@ case object IDMapping {
     ParsingError.MalformedRow + (ParsingError.UndefinedField + EntryAnnotation)
   ] =
     rows(_).map {
-      case Left(err) => Left(err)
+      case Left(err) =>
+        err match {
+          case e: ParsingError.MalformedRow   => Left(e)
+          case e: ParsingError.UndefinedField => Right(Left(e))
+        }
       case Right(row) =>
         entryAnnotationFrom(row) match {
           case Left(err)         => Right(Left(err))
@@ -155,6 +159,8 @@ case object IDMapping {
 
     case object UndefinedField {
 
+      final case class TaxIDNotANumber(val id: RNAID, val taxID: String)
+          extends UndefinedField
       final case class UndefinedDatabase(val id: RNAID, val name: String)
           extends UndefinedField
       final case class UndefinedRNAType(val id: RNAID, val name: String)
@@ -164,9 +170,20 @@ case object IDMapping {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  val rowFrom: Seq[String] => ParsingError.MalformedRow + Row = {
-    case Seq(f1, f2, f3, f4, f5, f6) => Right { (f1, f2, f3, f4.toInt, f5, f6) }
-    case other                       => Left(ParsingError.MalformedRow(other))
+  /**
+    * Given a sequence of strings, create a [[Row]] if and only if the sequence
+    * contains at least six elements and the fourth one is convertible into an
+    * integer. Otherwise, return a malformed row error.
+    */
+  val rowFrom: Seq[String] => ParsingError + Row = {
+    case Seq(f1, f2, f3, f4, f5, f6) =>
+      Try(f4.toInt) match {
+        case Success(f4) =>
+          Right { (f1, f2, f3, f4.toInt, f5, f6) }
+        case Failure(_) =>
+          Left(ParsingError.UndefinedField.TaxIDNotANumber(f1, f4))
+      }
+    case other => Left(ParsingError.MalformedRow(other))
   }
 
   /**
