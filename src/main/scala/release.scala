@@ -18,7 +18,8 @@ case object release {
     *   1. Download the `.gz` file from [[data.input.releaseURL]]
     *   2. Uncompress to obtain the file
     *   4. Upload the file ([[data.input.idMappingTSV]] and
-    *   [[data.input.speciesSpecificFASTA]] resp.) to the folder [[data.prefix]].
+    *   [[data.input.speciesSpecificFASTA]] resp.) to the folder
+    *   [[data.prefix]].
     *
     * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
     * S3 objects if everything worked as expected or with a Left(error) if an
@@ -67,15 +68,15 @@ case object release {
         // IDMappings
         mirrorFile(
           url = new URL(data.input.idMappingTSVGZURL(version)),
-          gzFile = data.local.idMappingGZFile(version, localFolder),
-          file = data.local.idMappingFile(version, localFolder),
+          gzFile = data.local.idMappingGZFile(localFolder),
+          file = data.local.idMappingFile(localFolder),
           s3Obj = data.idMappingTSV(version)
         ).flatMap { idMappingsS3 =>
           // FASTA
           mirrorFile(
             url = new URL(data.input.speciesSpecificFASTAGZURL(version)),
-            gzFile = data.local.fastaGZFile(version, localFolder),
-            file = data.local.fastaFile(version, localFolder),
+            gzFile = data.local.fastaGZFile(localFolder),
+            file = data.local.fastaFile(localFolder),
             s3Obj = data.speciesSpecificFASTA(version)
           ).map { fastaS3 =>
             Set(idMappingsS3, fastaS3)
@@ -102,7 +103,8 @@ case object release {
       )
 
   /**
-    * Try to mirror a new version of RNACentral to S3.
+    * Mirror a new version of RNACentral to S3 if and only if the upload does
+    * not override anything.
     *
     * This method tries to download [[data.input.releaseURL]], uncompress it
     * and upload the corresponding files to the objects defined in

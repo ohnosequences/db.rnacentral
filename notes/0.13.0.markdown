@@ -1,0 +1,21 @@
+# 0.13.0
+
+This version refactors the whole data release process:
+
+* `aws-scala-tools` was removed and `s3` and `files` were added as new dependencies.
+* The release process is now local: no EC2 instances are run when releasing a new version of the package.
+* The release process was refactored out of tests and reimplemented in an object on the main code.
+* The definition of the data was slightly improved.
+* The old data versions were removed from the code and the current test versions are being uploaded to an `unstable` subdirectory in S3.
+* A new test was implemented to check that all supported versions are in S3 as expected.
+
+From now on, the data release process should look something like the following:
+
+1. Add a new `object` that extends `Version` in [`src/main/scala/data.scala`](https://github.com/ohnosequences/db.rnacentral/blob/releases.0.13.0/src/main/scala/data.scala); e.g., `case object _11_0 extends Version("11.0")`
+2. Perform the mirror through the method [`release.mirrorNewVersion`](https://github.com/ohnosequences/db.rnacentral/blob/releases.0.13.0/src/main/scala/release.scala#L131-L137); e.g., through an `sbt console`:
+```scala
+scala> import ohnosequences.db.rnacentral._
+scala> release.mirrorNewVersion(Version._10_0, new java.io.File("~/localDir"))
+```
+3. Prepare a new release of the repository by writing release notes in the corresponding file in [`notes`](https://github.com/ohnosequences/db.rnacentral/tree/releases.0.13.0/notes); e.g. in `notes/0.14.0.markdown`
+4. Make the release of the repository, that checks that all declared versions of the data exist and are correct. This is done through the `sbt` `release` task; e.g., with `sbt release minor`

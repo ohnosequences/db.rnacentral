@@ -1,10 +1,27 @@
 package ohnosequences.db.rnacentral
 
+import scala.util.{Failure, Success, Try}
+
 case object IDMapping {
 
-  // URS0000000023	ENA	JX826989.1:296..347:tRNA	1255168	tRNA	trnL
+  /**
+    * A Row is expected to contain the following fields separated by a white
+    * space:
+    *   - RNA identifier
+    *   - Database name
+    *   - Database entry identifier
+    *   - NCBI taxonomy identifier
+    *   - RNA type name
+    *   - Gene name
+    * Example:
+    *
+    * URS0000000023	ENA	JX826989.1:296..347:tRNA	1255168	tRNA	trnL
+    */
   type Row = (String, String, String, Int, String, String)
 
+  /**
+    * Converts an entry annotation along with its RNA ID to a row
+    */
   val entryAnnotationToRow: RNAIDAndEntryAnnotation => Row = {
     case (id, a) =>
       (
@@ -17,11 +34,17 @@ case object IDMapping {
       )
   }
 
-  val rows: RNACentralData => Iterator[ParsingError.MalformedRow + Row] =
+  /**
+    * Tries to read each row of the ID mappings from a [[RNACentralData]]
+    *
+    * For each line in the file, it returns either a malformed row error, or a
+    * successfully formed [[Row]].
+    */
+  val rows: RNACentralData => Iterator[ParsingError + Row] =
     data => (io tsv data.idMapping) map rowFrom
 
   /**
-    * Tries to parse each line of the ID mappings from a RNACentralData
+    * Tries to parse each line of the ID mappings from a [[RNACentralData]]
     *
     * For each line in the file, it returns either a malformed row error, an
     * undefined field error or the correctly parsed entry annotation.
@@ -32,7 +55,11 @@ case object IDMapping {
     ParsingError.MalformedRow + (ParsingError.UndefinedField + EntryAnnotation)
   ] =
     rows(_).map {
-      case Left(err) => Left(err)
+      case Left(err) =>
+        err match {
+          case e: ParsingError.MalformedRow   => Left(e)
+          case e: ParsingError.UndefinedField => Right(Left(e))
+        }
       case Right(row) =>
         entryAnnotationFrom(row) match {
           case Left(err)         => Right(Left(err))
@@ -41,7 +68,7 @@ case object IDMapping {
     }
 
   /**
-    * Tries to parse the ID mappings from a RNACentralData and group all
+    * Tries to parse the ID mappings from a [[RNACentralData]] and group all
     * annotations under the same RNA ID
     *
     * The file to parse contains an entry annotation per line, with the entry ID
@@ -50,7 +77,8 @@ case object IDMapping {
     * This function groups all of these adjacent lines that correspond to the
     * same entry.
     *
-    * All adjacent malformed rows where no ID can be identified are also grouped.
+    * All adjacent malformed rows where no ID can be identified are also
+    * grouped.
     *
     * @return an Iterator that yields either a group of adjacent malformed rows
     * or a tuple with:
@@ -80,7 +108,7 @@ case object IDMapping {
     }
 
   /**
-    * Parse the ID mappings from a RNACentralData and builds both a set
+    * Parse the ID mappings from a [[RNACentralData]] and builds both a set
     * of malformed rows and a map linking each different RNA ID to a set of its
     * corresponding parsed entries, either an error because of undefined fields
     * or the correctly parsed entry.
@@ -103,10 +131,18 @@ case object IDMapping {
         }
     }
 
+  /**
+    * Map each row yielded by the iterator into either an error caused by an
+    * undefined field or a well-formed entry annotation
+    */
   val entryAnnotations
     : Iterator[Row] => Iterator[ParsingError.UndefinedField + EntryAnnotation] =
     _ map entryAnnotationFrom
 
+  /**
+    * Group the entry annotations yielded by the iterator into groups of
+    * adjacent entries that have the same [[RNAID]]
+    */
   val entryAnnotationsByRNAID
     : Iterator[EntryAnnotation] => Iterator[(RNAID, Set[EntryAnnotation])] =
     xs =>
@@ -123,6 +159,8 @@ case object IDMapping {
 
     case object UndefinedField {
 
+      final case class TaxIDNotANumber(val id: RNAID, val taxID: String)
+          extends UndefinedField
       final case class UndefinedDatabase(val id: RNAID, val name: String)
           extends UndefinedField
       final case class UndefinedRNAType(val id: RNAID, val name: String)
@@ -132,16 +170,36 @@ case object IDMapping {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  val rowFrom: Seq[String] => ParsingError.MalformedRow + Row = {
-    case Seq(f1, f2, f3, f4, f5, f6) => Right { (f1, f2, f3, f4.toInt, f5, f6) }
-    case other                       => Left(ParsingError.MalformedRow(other))
+  /**
+    * Given a sequence of strings, create a [[Row]] if and only if the sequence
+    * contains at least six elements and the fourth one is convertible into an
+    * integer. Otherwise, return a malformed row error.
+    */
+  val rowFrom: Seq[String] => ParsingError + Row = {
+    case Seq(f1, f2, f3, f4, f5, f6) =>
+      Try(f4.toInt) match {
+        case Success(f4) =>
+          Right { (f1, f2, f3, f4.toInt, f5, f6) }
+        case Failure(_) =>
+          Left(ParsingError.UndefinedField.TaxIDNotANumber(f1, f4))
+      }
+    case other => Left(ParsingError.MalformedRow(other))
   }
 
+  /**
+    * Tries to parse a couple of strings into a [[DatabaseEntry]], where the
+    * database name is parsed from the first string and the database entry
+    * identifier is parsed from the second one.
+    */
   private val databaseEntryFrom: (String, String) => Option[DatabaseEntry] = {
     case (dbName, id) =>
       (Database from dbName) map { DatabaseEntry(_, id) }
   }
 
+  /**
+    * Tries to parse a [[Row]] into an [[EntryAnnotation]], yielding an error
+    * instead if some field was not well defined.
+    */
   val entryAnnotationFrom
     : Row => (ParsingError.UndefinedField + EntryAnnotation) = {
     case (id, dbName, dbID, taxID, rnaType, geneName) =>

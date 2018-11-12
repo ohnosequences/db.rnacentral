@@ -1,6 +1,7 @@
 package ohnosequences.db.rnacentral.test
 
 import ohnosequences.db.rnacentral
+import ohnosequences.files.directory
 import ohnosequences.fastarious.fasta._
 import rnacentral.{EntryAnnotation, RNACentralData, RNAID, Version, iterators}
 import java.io.File
@@ -16,10 +17,12 @@ object data {
       version: rnacentral.Version): S3Error + RNACentralData = {
     val folder = localFolder(version)
 
-    val fasta      = rnacentral.data.local.fastaFile(version, folder)
+    val fasta      = rnacentral.data.local.fastaFile(folder)
     val fastaS3    = rnacentral.data.idMappingTSV(version)
-    val mappings   = rnacentral.data.local.idMappingFile(version, folder)
+    val mappings   = rnacentral.data.local.idMappingFile(folder)
     val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
+
+    directory.createDirectory(folder)
 
     version match {
       case v: Version._9_0 =>
