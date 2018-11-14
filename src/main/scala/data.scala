@@ -128,27 +128,15 @@ case object data {
     * return an S3 object in a fixed S3 directory, which is parametrized by the
     * version passed.
     */
-  def prefix(version: Version): String => S3Object = {
-    val prefix = version match {
-      case version: Version._9_0 =>
-        s3"resources.ohnosequences.com" /
-          "ohnosequences" /
-          "db" /
-          "rnacentral" /
-          version.toString
-
-      case version: Version._10_0 =>
-        s3"resources.ohnosequences.com" /
-          "ohnosequences" /
-          "db" /
-          "rnacentral" /
-          "unstable" /
-          version.toString
-    }
-
-    file: String =>
-      prefix / file
-  }
+  def prefix(version: Version): String => S3Object =
+    file =>
+      s3"resources.ohnosequences.com" /
+        "ohnosequences" /
+        "db" /
+        "rnacentral" /
+        "unstable" /
+        version.toString /
+      file
 
   /**
     * Return the path of the S3 object containing the mirrored id mapping for

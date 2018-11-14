@@ -1,12 +1,11 @@
 package ohnosequences.db.rnacentral.test
 
-import ohnosequences.db.rnacentral
+import ohnosequences.db.rnacentral, rnacentral.Error
 import ohnosequences.files.directory
 import ohnosequences.fastarious.fasta._
 import rnacentral.{EntryAnnotation, RNACentralData, RNAID, Version, iterators}
 import java.io.File
-import ohnosequences.s3.{Error => S3Error}
-import rnacentral.s3Helpers.{getCheckedFileIfDifferent, getFile}
+import rnacentral.s3Helpers.{getCheckedFileIfDifferent}
 
 object data {
 
@@ -14,7 +13,8 @@ object data {
     new File(s"./data/in/${version}/")
 
   private def getRnacentralData(
-      version: rnacentral.Version): S3Error + RNACentralData = {
+      version: rnacentral.Version
+  ): Error + RNACentralData = {
     val folder = localFolder(version)
 
     val fasta      = rnacentral.data.local.fastaFile(folder)
@@ -22,36 +22,30 @@ object data {
     val mappings   = rnacentral.data.local.idMappingFile(folder)
     val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
 
-    directory.createDirectory(folder)
+    val maybeDir =
+      directory.createDirectory(folder).left.map(Error.FileError)
 
-    version match {
-      case v: Version._9_0 =>
-        getFile(mappingsS3, mappings)
-          .flatMap(_ => getFile(fastaS3, fasta))
-          .map(_ => RNACentralData(fasta, mappings))
-
-      case v: Version._10_0 =>
-        getCheckedFileIfDifferent(mappingsS3, mappings)
-          .flatMap(_ => getCheckedFileIfDifferent(fastaS3, fasta))
-          .map(_ => RNACentralData(fasta, mappings))
-    }
+    maybeDir
+      .flatMap(_ => getCheckedFileIfDifferent(mappingsS3, mappings))
+      .flatMap(_ => getCheckedFileIfDifferent(fastaS3, fasta))
+      .map(_ => RNACentralData(fasta, mappings))
   }
 
   lazy val rnaCentralData_9_0  = getRnacentralData(Version._9_0)
   lazy val rnaCentralData_10_0 = getRnacentralData(Version._10_0)
 
-  def rnacentralData(version: rnacentral.Version): S3Error + RNACentralData =
+  def rnacentralData(version: rnacentral.Version): Error + RNACentralData =
     version match {
       case v: Version._9_0  => rnaCentralData_9_0
       case v: Version._10_0 => rnaCentralData_10_0
     }
 
-  def fastas(version: Version): S3Error + Iterator[(RNAID, Seq[FASTA])] =
+  def fastas(version: Version): Error + Iterator[(RNAID, Seq[FASTA])] =
     rnacentralData(version).map(rnacentral.sequences.fastaByRNAID)
 
   def annotations(
       version: Version
-  ): S3Error + Iterator[(RNAID, Set[EntryAnnotation])] =
+  ): Error + Iterator[(RNAID, Set[EntryAnnotation])] =
     rnacentralData(version).map { rnacentralData =>
       rnacentral.IDMapping entryAnnotationsByRNAID {
         iterators.right {

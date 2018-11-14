@@ -52,10 +52,7 @@ case object release {
       maybeFile match {
         case Left(err) => Left(Error.FileError(err))
         case Right(file) =>
-          s3Helpers.paranoidPutFile(file, s3Obj) match {
-            case Left(err) => Left(Error.S3Error(err))
-            case Right(_)  => Right(s3Obj)
-          }
+          s3Helpers.paranoidPutFile(file, s3Obj).map(_ => s3Obj)
       }
     }
 
