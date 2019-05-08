@@ -7,7 +7,6 @@ dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value
 // compiler
 ////////////////////////////////////////////////////////////////////////////////
 scalacOptions ++= Seq(
-  "-Xsource:2.13",
   "-Xlint",
   "-unchecked",
   "-Yno-adapted-args",
