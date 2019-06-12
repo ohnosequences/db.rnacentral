@@ -11,6 +11,10 @@ final case class RNACentralData(
 
 object types {
 
+  import it.unimi.dsi.fastutil.longs._
+  import it.unimi.dsi.fastutil.ints._
+  import it.unimi.dsi.fastutil.objects.ObjectArrayList
+
   // fasta -> Map[RNAID, Array[FastaAnnotation]]
   //   tsv -> Map[RNAID, Array[TSVAnnotation]]
   //
@@ -23,6 +27,61 @@ object types {
   type Header = String
   type Index  = Int
   type rec    = annotation.tailrec
+
+  final class FastaAnnotations(
+      val xs: Array[FastaAnnotation],
+      val starts: Array[Int],
+      val stops: Array[Int],
+      val id2Pos: Long2IntOpenHashMap
+  )
+
+  type ID2DNA = it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[DNA]
+  type ID2FastaAnnotations =
+    it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[Array[FastaAnnotation]]
+
+  def buildFastaAnnotations(
+      ids: Array[RNAID],
+      annots: Array[FastaAnnotation]): FastaAnnotations = {
+
+    val acc_starts = new IntArrayList
+    val acc_stops  = new IntArrayList
+    val acc_ids    = new LongArrayList
+
+    @rec @inline
+    def rec(i: Index): Unit =
+      if (i < ids.length) {
+
+        val id   = ids(i)
+        val _end = ids.indexWhere(_ != id, i)
+        val end  = if (_end == -1) ids.length else _end
+
+        acc_ids add id
+        acc_starts add i
+        acc_stops add end
+        rec(end)
+      }
+
+    rec(0)
+
+    println(acc_ids.size)
+    val _ids    = acc_ids.toArray(new Array[Long](acc_ids.size))
+    val _id2pos = new Long2IntOpenHashMap(_ids.length)
+
+    println(_ids.length)
+    println(new LongOpenHashSet(_ids).size)
+
+    _ids.iterator.zipWithIndex foreach {
+      case (id, i) =>
+        _id2pos.put(id, i)
+    }
+
+    new FastaAnnotations(
+      xs = annots,
+      starts = acc_starts.toArray(new Array[Int](acc_starts.size)),
+      stops = acc_stops.toArray(new Array[Int](acc_stops.size)),
+      id2Pos = _id2pos
+    )
+  }
 
   final class FastaAnnotation(
       final val taxID: TaxID,
@@ -268,6 +327,13 @@ object types {
 
       def fastaAnnotations(i: DataInputStream): Array[FastaAnnotation] =
         array[FastaAnnotation](i, fastaAnnotation _)
+
+      def fastaAnnotations(file: File): Array[FastaAnnotation] = {
+        val i   = readStream(file)
+        val res = fastaAnnotations(i)
+        i.close
+        res
+      }
     }
   }
 }
