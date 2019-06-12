@@ -18,9 +18,9 @@ object data {
     val folder = localFolder(version)
 
     val fasta      = rnacentral.data.local.fastaFile(folder)
-    val fastaS3    = rnacentral.data.idMappingTSV(version)
+    val fastaS3    = rnacentral.data.speciesSpecificFASTA(version)
     val mappings   = rnacentral.data.local.idMappingFile(folder)
-    val mappingsS3 = rnacentral.data.speciesSpecificFASTA(version)
+    val mappingsS3 = rnacentral.data.idMappingTSV(version)
 
     val maybeDir =
       directory.createDirectory(folder).left.map(Error.FileError)

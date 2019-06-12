@@ -1,11 +1,276 @@
 package ohnosequences.db.rnacentral
 
 import java.io.File
+import ohnosequences.dna._
+import ohnosequences.bits._
 
 final case class RNACentralData(
     val idMapping: File,
     val speciesSpecificFasta: File
 )
+
+object types {
+
+  // fasta -> Map[RNAID, Array[FastaAnnotation]]
+  //   tsv -> Map[RNAID, Array[TSVAnnotation]]
+  //
+  // the sequences are in a Map[RNAID, DNA]
+  //
+  // It is fairly easy to generate subsets: simply remove all entries in
+  // the maps above by `RNAID`.
+  type RNAID  = Long
+  type TaxID  = Int
+  type Header = String
+  type Index  = Int
+  type rec    = annotation.tailrec
+
+  final class FastaAnnotation(
+      final val taxID: TaxID,
+      final val header: Header
+  )
+
+  final class TSVAnnotation(
+      final val db: Database,
+      final val db_ref: String,
+      final val taxID: TaxID,
+      final val rnaType: RNAType,
+      final val geneName: String
+  )
+
+  final val RNAIDDigits: Int    = 10
+  final val RNAIDPrefix: String = "URS"
+
+  final val zeroes: Array[String] =
+    Array.tabulate(RNAIDDigits) { i =>
+      "0" * i
+    }
+
+  final def RNAID2FixedWidthHexString(r: RNAID): String = {
+
+    val hexv = java.lang.Long.toString(r, 16).toUpperCase
+    zeroes(RNAIDDigits - hexv.length).concat(hexv)
+  }
+
+  def RNAID2String(r: RNAID): String =
+    RNAIDPrefix.concat(RNAID2FixedWidthHexString(r))
+
+  @inline final def hexString2RNAID(x: String): RNAID =
+    java.lang.Long.parseLong(x, 16)
+
+  final def string2RNAID(x: String): RNAID =
+    hexString2RNAID(x.stripPrefix(RNAIDPrefix))
+
+  final def RNAIDTaxID2String(x: RNAID, y: TaxID): String =
+    RNAID2String(x)
+      .concat("_")
+      .concat(y.toString)
+
+  final def extractRNAID(x: String): RNAID =
+    hexString2RNAID(x.slice(3, 13))
+
+  final def extractTaxID(x: String): TaxID =
+    x.drop(14).takeWhile(_ != ' ').toInt
+
+  final def extractHeader(x: String): Header =
+    x.dropWhile(_ != ' ').trim
+
+  final def description2Header(x: String): Header =
+    x
+
+  final def cleanSequenceString(x: String): String =
+    x.toUpperCase.replace('U', 'T')
+
+  final val ATCGChars: Set[Char] = Set('A', 'T', 'C', 'G')
+
+  final def isATCG(c: Char): Boolean =
+    (c == 'A') ||
+      (c == 'T') ||
+      (c == 'C') ||
+      (c == 'G')
+
+  final def onlyATCG(x: String): Boolean =
+    x forall (isATCG _)
+
+  def string2DNA(s: String): DNA = {
+
+    val x = cleanSequenceString(s)
+    if (onlyATCG(x)) DNA.dnaFromCharsOrG(x.toCharArray) else DNA.empty
+  }
+
+  object serialization {
+
+    import java.io.{
+      DataInput,
+      DataInputStream,
+      DataOutput,
+      DataOutputStream,
+      File,
+      FileInputStream,
+      FileOutputStream
+    }
+    import it.unimi.dsi.fastutil.io.{
+      BinIO,
+      FastBufferedInputStream,
+      FastBufferedOutputStream
+    }
+
+    object write {
+
+      def writeStream(f: File): DataOutputStream =
+        new DataOutputStream(
+          new FastBufferedOutputStream(new FileOutputStream(f)))
+
+      def array[X](
+          xs: Array[X],
+          o: DataOutputStream,
+          w: (X, DataOutputStream) => DataOutputStream
+      ): DataOutputStream = {
+
+        @rec @inline
+        def rec(i: Index, o: DataOutputStream): DataOutputStream =
+          if (i < xs.length)
+            rec(i + 1, w(xs(i), o))
+          else
+            o
+
+        if (xs.isEmpty) o
+        else {
+          o writeInt xs.length
+          rec(0, o)
+        }
+      }
+
+      def longs(xs: Array[Long], o: DataOutputStream): DataOutputStream = {
+
+        @rec @inline
+        def rec(i: Int): DataOutputStream =
+          if (i < xs.length) {
+            o writeLong xs(i)
+            rec(i + 1)
+          } else o
+
+        rec(0)
+      }
+
+      def dna(x: DNA, o: DataOutputStream): DataOutputStream = {
+
+        o writeLong x.length
+        longs(x.leftBits.words, o)
+        longs(x.rightBits.words, o)
+      }
+
+      def dnas(xs: Array[DNA], o: DataOutputStream): DataOutputStream =
+        array[DNA](xs, o, dna _)
+
+      def RNAID(x: RNAID, o: DataOutputStream): DataOutputStream = {
+        o.writeLong(x)
+        o
+      }
+
+      def RNAIDs(xs: Array[RNAID], o: DataOutputStream): DataOutputStream =
+        array[RNAID](xs, o, RNAID _)
+
+      def taxID(x: TaxID, o: DataOutputStream): DataOutputStream = {
+        o.writeInt(x)
+        o
+      }
+
+      def taxIDs(xs: Array[TaxID], o: DataOutputStream): DataOutputStream =
+        array[TaxID](xs, o, taxID _)
+
+      def header(x: Header, o: DataOutputStream): DataOutputStream =
+        array[Char](x.toCharArray, o, (c, o) => { o.writeChar(c); o })
+
+      def fastaAnnotation(f: FastaAnnotation,
+                          o: DataOutputStream): DataOutputStream = {
+        taxID(f.taxID, o)
+        header(f.header, o)
+      }
+
+      def fastaAnnotations(fs: Array[FastaAnnotation],
+                           o: DataOutputStream): DataOutputStream =
+        array[FastaAnnotation](fs, o, fastaAnnotation _)
+    }
+
+    object read {
+
+      def readStream(f: File): DataInputStream =
+        new DataInputStream(new FastBufferedInputStream(new FileInputStream(f)))
+
+      def array[X: scala.reflect.ClassTag](
+          r: DataInputStream,
+          b: DataInputStream => X
+      ): Array[X] = {
+
+        val l   = r.readInt
+        val arr = new Array[X](l)
+
+        @inline @rec
+        def rec(i: Int): Array[X] =
+          if (i < arr.length) {
+            arr(i) = b(r)
+            rec(i + 1)
+          } else
+            arr
+
+        rec(0)
+      }
+
+      def longs(r: DataInputStream, xs: Array[Long]): Array[Long] = {
+
+        @rec @inline
+        def rec(i: Int): Array[Long] =
+          if (i < xs.length) {
+            xs(i) = r.readLong
+            rec(i + 1)
+          } else xs
+
+        rec(0)
+      }
+
+      def dna(r: DataInputStream): DNA = {
+
+        val len      = r.readLong
+        val numWords = BitVector.numWords(len)
+
+        val leftWs  = new Array[Long](numWords)
+        val rightWs = leftWs.clone
+
+        val left  = new BitVector(longs(r, leftWs), len)
+        val right = new BitVector(longs(r, rightWs), len)
+
+        new DNA(leftBits = left, rightBits = right)
+      }
+
+      def dnas(r: DataInputStream): Array[DNA] =
+        array[DNA](r, dna _)
+
+      def RNAID(i: DataInputStream): RNAID =
+        i.readLong
+
+      def taxID(i: DataInputStream): TaxID =
+        i.readInt
+
+      def RNAIDs(i: DataInputStream): Array[RNAID] =
+        array[RNAID](i, RNAID _)
+
+      def taxIDs(i: DataInputStream): Array[TaxID] =
+        array[TaxID](i, taxID _)
+
+      def header(i: DataInputStream): Header =
+        new String(array[Char](i, _.readChar))
+
+      def fastaAnnotation(i: DataInputStream): FastaAnnotation = {
+        val x = taxID(i)
+        val y = header(i)
+        new FastaAnnotation(x, y)
+      }
+
+      def fastaAnnotations(i: DataInputStream): Array[FastaAnnotation] =
+        array[FastaAnnotation](i, fastaAnnotation _)
+    }
+  }
+}
 
 final case class RNASequence(
     val rnaID: RNAID,
