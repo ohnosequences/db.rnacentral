@@ -18,16 +18,16 @@ final class RNAMappings(
 object RNAMappings {
 
   def extractRNAID(row: Array[String]): RNAID =
-    types.string2RNAID(row(0))
+    RNAID string2RNAID row(0)
 
   def extractDatabase(row: Array[String]): Database =
-    Database.from(row(1))
+    Database from row(1)
 
   def extractTaxID(row: Array[String]): TaxID =
     row(3).toInt
 
   def extractRNAType(row: Array[String]): RNAType =
-    RNAType.from(row(4))
+    RNAType from row(4)
 
   def extractGeneName(row: Array[String]): String =
     row(5)
@@ -40,6 +40,7 @@ object RNAMappings {
       extractGeneName(row)
     )
 
+  @rec
   def accInto(id: RNAID,
               it: BufferedIterator[Array[String]],
               xs: ObjectArrayList[IDMappingRow]): Array[IDMappingRow] =

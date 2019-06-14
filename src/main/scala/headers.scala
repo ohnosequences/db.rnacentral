@@ -1,6 +1,5 @@
 package ohnosequences.db.rnacentral
 
-import types._
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
 
 final class Header(
@@ -15,7 +14,8 @@ final class RNAHeaders(
 
 object RNAHeaders {
 
-  type RNAID = Long
+  final def extractRNAID(x: String): RNAID =
+    RNAID hexString2RNAID x.slice(3, 13)
 
   def extractText(ln: String): String =
     new String(ln.dropWhile(_ != ' ').trim)

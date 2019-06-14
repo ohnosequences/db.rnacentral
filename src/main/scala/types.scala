@@ -2,200 +2,43 @@ package ohnosequences.db.rnacentral
 
 import java.io.File
 import ohnosequences.dna._
-import ohnosequences.bits._
 
 final case class RNACentralData(
     val idMapping: File,
     val speciesSpecificFasta: File
 )
 
-object types {
+object TaxID {}
 
-  import it.unimi.dsi.fastutil.longs._
-  import it.unimi.dsi.fastutil.ints._
-  import it.unimi.dsi.fastutil.objects.ObjectArrayList
+object RNAID {
 
-  // fasta -> Map[RNAID, Array[FastaAnnotation]]
-  //   tsv -> Map[RNAID, Array[TSVAnnotation]]
-  //
-  // the sequences are in a Map[RNAID, DNA]
-  //
-  // It is fairly easy to generate subsets: simply remove all entries in
-  // the maps above by `RNAID`.
-  type RNAID  = Long
-  type TaxID  = Int
-  type Header = String
-  type Index  = Int
-  type rec    = annotation.tailrec
+  final val digits: Int    = 10
+  final val prefix: String = "URS"
 
-  def RNAID2TaxIDs(
-      headers: Iterator[String]): Long2ObjectOpenHashMap[Array[Int]] = {
+  final val zeroes: Array[String] = Array.tabulate(digits)(i => "0" * i)
 
-    val map = new Long2ObjectOpenHashMap[IntArrayList](12000000, .75F)
-
-    headers.zipWithIndex foreach {
-      case (h, n) =>
-        val key   = extractRNAID(h)
-        val value = extractTaxID(h)
-
-        if (map.containsKey(key)) {
-          val v = map.get(key)
-          v add value
-        } else {
-          val v = new IntArrayList()
-          v add value
-          map.put(key, v)
-        }
-
-        if (n % 100000 == 0) {
-          println(s"${n} headers")
-        }
-    }
-
-    val res = new Long2ObjectOpenHashMap[Array[Int]](map.size, .75F)
-
-    map.long2ObjectEntrySet.fastForEach { e =>
-      val arrl = e.getValue
-      res.put(e.getLongKey, arrl.toArray(new Array[Int](arrl.size)))
-    }
-
-    res
-  }
-
-  // headers without the initial '>'
-  def buildFastaAnnotations(headers: Iterator[String])
-    : Long2ObjectOpenHashMap[ObjectArrayList[FastaAnnotation]] = {
-
-    val map = new Long2ObjectOpenHashMap[ObjectArrayList[FastaAnnotation]]
-
-    headers.zipWithIndex foreach {
-      case (h, n) =>
-        val key    = extractRNAID(h)
-        val fannot = new FastaAnnotation(extractTaxID(h), extractHeader(h))
-        if (map.containsKey(key)) {
-          val v = map.get(key)
-          v add fannot
-        } else {
-          val v = new ObjectArrayList[FastaAnnotation](1)
-          v add fannot
-          map.put(key, v)
-        }
-
-        if (n % 100000 == 0) {
-          println(s"${n} headers")
-        }
-    }
-
-    map
-  }
-
-  final class FastaAnnotations(
-      val xs: Array[FastaAnnotation],
-      val starts: Array[Int],
-      val stops: Array[Int],
-      val id2Pos: Long2IntOpenHashMap
-  )
-
-  type ID2DNA = it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[DNA]
-  type ID2FastaAnnotations =
-    it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[Array[FastaAnnotation]]
-
-  def buildFastaAnnotations(
-      ids: Array[RNAID],
-      annots: Array[FastaAnnotation]): FastaAnnotations = {
-
-    val acc_starts = new IntArrayList
-    val acc_stops  = new IntArrayList
-    val acc_ids    = new LongArrayList
-
-    @rec @inline
-    def rec(i: Index): Unit =
-      if (i < ids.length) {
-
-        val id   = ids(i)
-        val _end = ids.indexWhere(_ != id, i)
-        val end  = if (_end == -1) ids.length else _end
-
-        acc_ids add id
-        acc_starts add i
-        acc_stops add end
-        rec(end)
-      }
-
-    rec(0)
-
-    println(acc_ids.size)
-    val _ids    = acc_ids.toArray(new Array[Long](acc_ids.size))
-    val _id2pos = new Long2IntOpenHashMap(_ids.length)
-
-    println(_ids.length)
-    println(new LongOpenHashSet(_ids).size)
-
-    _ids.iterator.zipWithIndex foreach {
-      case (id, i) =>
-        _id2pos.put(id, i)
-    }
-
-    new FastaAnnotations(
-      xs = annots,
-      starts = acc_starts.toArray(new Array[Int](acc_starts.size)),
-      stops = acc_stops.toArray(new Array[Int](acc_stops.size)),
-      id2Pos = _id2pos
-    )
-  }
-
-  final class FastaAnnotation(
-      final val taxID: TaxID,
-      final val header: Header
-  )
-
-  final class TSVAnnotation(
-      final val db: Database,
-      final val db_ref: String,
-      final val taxID: TaxID,
-      final val rnaType: RNAType,
-      final val geneName: String
-  )
-
-  final val RNAIDDigits: Int    = 10
-  final val RNAIDPrefix: String = "URS"
-
-  final val zeroes: Array[String] =
-    Array.tabulate(RNAIDDigits) { i =>
-      "0" * i
-    }
-
-  final def RNAID2FixedWidthHexString(r: RNAID): String = {
+  final def toFixedWidthHexString(r: RNAID): String = {
 
     val hexv = java.lang.Long.toString(r, 16).toUpperCase
-    zeroes(RNAIDDigits - hexv.length).concat(hexv)
+    zeroes(digits - hexv.length).concat(hexv)
   }
 
-  def RNAID2String(r: RNAID): String =
-    RNAIDPrefix.concat(RNAID2FixedWidthHexString(r))
+  final def toString(r: RNAID): String =
+    prefix concat toFixedWidthHexString(r)
 
   @inline final def hexString2RNAID(x: String): RNAID =
     java.lang.Long.parseLong(x, 16)
 
   final def string2RNAID(x: String): RNAID =
-    hexString2RNAID(x.stripPrefix(RNAIDPrefix))
+    hexString2RNAID(x stripPrefix prefix)
 
   final def RNAIDTaxID2String(x: RNAID, y: TaxID): String =
-    RNAID2String(x)
+    toString(x)
       .concat("_")
       .concat(y.toString)
+}
 
-  final def extractRNAID(x: String): RNAID =
-    hexString2RNAID(x.slice(3, 13))
-
-  final def extractTaxID(x: String): TaxID =
-    x.drop(14).takeWhile(_ != ' ').toInt
-
-  final def extractHeader(x: String): Header =
-    x.dropWhile(_ != ' ').trim
-
-  final def description2Header(x: String): Header =
-    x
+object types {
 
   final def cleanSequenceString(x: String): String =
     x.toUpperCase.replace('U', 'T')
@@ -216,218 +59,7 @@ object types {
     val x = cleanSequenceString(s)
     if (onlyATCG(x)) DNA.dnaFromCharsOrG(x.toCharArray) else DNA.empty
   }
-
-  object serialization {
-
-    import java.io.{
-      DataInput,
-      DataInputStream,
-      DataOutput,
-      DataOutputStream,
-      File,
-      FileInputStream,
-      FileOutputStream
-    }
-    import it.unimi.dsi.fastutil.io.{
-      BinIO,
-      FastBufferedInputStream,
-      FastBufferedOutputStream
-    }
-
-    object write {
-
-      def writeStream(f: File): DataOutputStream =
-        new DataOutputStream(
-          new FastBufferedOutputStream(new FileOutputStream(f)))
-
-      def array[X](
-          xs: Array[X],
-          o: DataOutputStream,
-          w: (X, DataOutputStream) => DataOutputStream
-      ): DataOutputStream = {
-
-        @rec @inline
-        def rec(i: Index, o: DataOutputStream): DataOutputStream =
-          if (i < xs.length)
-            rec(i + 1, w(xs(i), o))
-          else
-            o
-
-        if (xs.isEmpty) o
-        else {
-          o writeInt xs.length
-          rec(0, o)
-        }
-      }
-
-      def longs(xs: Array[Long], o: DataOutputStream): DataOutputStream = {
-
-        @rec @inline
-        def rec(i: Int): DataOutputStream =
-          if (i < xs.length) {
-            o writeLong xs(i)
-            rec(i + 1)
-          } else o
-
-        rec(0)
-      }
-
-      def dna(x: DNA, o: DataOutputStream): DataOutputStream = {
-
-        o writeLong x.length
-        longs(x.leftBits.words, o)
-        longs(x.rightBits.words, o)
-      }
-
-      def dnas(xs: Array[DNA], o: DataOutputStream): DataOutputStream =
-        array[DNA](xs, o, dna _)
-
-      def RNAID(x: RNAID, o: DataOutputStream): DataOutputStream = {
-        o.writeLong(x)
-        o
-      }
-
-      def RNAIDs(xs: Array[RNAID], o: DataOutputStream): DataOutputStream =
-        array[RNAID](xs, o, RNAID _)
-
-      def taxID(x: TaxID, o: DataOutputStream): DataOutputStream = {
-        o.writeInt(x)
-        o
-      }
-
-      def taxIDs(xs: Array[TaxID], o: DataOutputStream): DataOutputStream =
-        array[TaxID](xs, o, taxID _)
-
-      def header(x: Header, o: DataOutputStream): DataOutputStream =
-        array[Char](x.toCharArray, o, (c, o) => { o.writeChar(c); o })
-
-      def fastaAnnotation(f: FastaAnnotation,
-                          o: DataOutputStream): DataOutputStream = {
-        taxID(f.taxID, o)
-        header(f.header, o)
-      }
-
-      def fastaAnnotations(fs: Array[FastaAnnotation],
-                           o: DataOutputStream): DataOutputStream =
-        array[FastaAnnotation](fs, o, fastaAnnotation _)
-    }
-
-    object read {
-
-      def readStream(f: File): DataInputStream =
-        new DataInputStream(new FastBufferedInputStream(new FileInputStream(f)))
-
-      def array[X: scala.reflect.ClassTag](
-          r: DataInputStream,
-          b: DataInputStream => X
-      ): Array[X] = {
-
-        val l   = r.readInt
-        val arr = new Array[X](l)
-
-        @inline @rec
-        def rec(i: Int): Array[X] =
-          if (i < arr.length) {
-            arr(i) = b(r)
-            rec(i + 1)
-          } else
-            arr
-
-        rec(0)
-      }
-
-      def longs(r: DataInputStream, xs: Array[Long]): Array[Long] = {
-
-        @rec @inline
-        def rec(i: Int): Array[Long] =
-          if (i < xs.length) {
-            xs(i) = r.readLong
-            rec(i + 1)
-          } else xs
-
-        rec(0)
-      }
-
-      def dna(r: DataInputStream): DNA = {
-
-        val len      = r.readLong
-        val numWords = BitVector.numWords(len)
-
-        val leftWs  = new Array[Long](numWords)
-        val rightWs = leftWs.clone
-
-        val left  = new BitVector(longs(r, leftWs), len)
-        val right = new BitVector(longs(r, rightWs), len)
-
-        new DNA(leftBits = left, rightBits = right)
-      }
-
-      def dnas(r: DataInputStream): Array[DNA] =
-        array[DNA](r, dna _)
-
-      def RNAID(i: DataInputStream): RNAID =
-        i.readLong
-
-      def taxID(i: DataInputStream): TaxID =
-        i.readInt
-
-      def RNAIDs(i: DataInputStream): Array[RNAID] =
-        array[RNAID](i, RNAID _)
-
-      def taxIDs(i: DataInputStream): Array[TaxID] =
-        array[TaxID](i, taxID _)
-
-      def header(i: DataInputStream): Header =
-        new String(array[Char](i, _.readChar))
-
-      def fastaAnnotation(i: DataInputStream): FastaAnnotation = {
-        val x = taxID(i)
-        val y = header(i)
-        new FastaAnnotation(x, y)
-      }
-
-      def fastaAnnotations(i: DataInputStream): Array[FastaAnnotation] =
-        array[FastaAnnotation](i, fastaAnnotation _)
-
-      def fastaAnnotations(file: File): Array[FastaAnnotation] = {
-        val i   = readStream(file)
-        val res = fastaAnnotations(i)
-        i.close
-        res
-      }
-    }
-  }
 }
-
-final case class RNASequence(
-    val rnaID: RNAID,
-    val sequence: String
-)
-
-final case class Entry(
-    val rnaSequence: RNASequence,
-    val sequenceAnnotations: Set[SequenceAnnotation],
-    val entryAnnotations: Set[EntryAnnotation]
-)
-
-final case class EntryAnnotation(
-    val rnaID: RNAID,
-    val ncbiTaxonomyID: TaxonID,
-    val databaseEntry: DatabaseEntry,
-    val rnaType: RNAType,
-    val geneName: Option[String]
-)
-
-final case class DatabaseEntry(
-    val database: Database,
-    val id: String
-)
-
-final case class SequenceAnnotation(
-    val rnaID: RNAID,
-    val ncbiTaxonomyID: TaxonID,
-    val description: String
-)
 
 sealed class RNAType(val name: String)
 
