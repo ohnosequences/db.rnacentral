@@ -49,6 +49,12 @@ object RNAMappings {
       accInto(id, it, xs)
     } else xs.toArray(new Array[IDMappingRow](xs.size))
 
+  def iterator(rows: Iterator[Array[String]]): Iterator[RNAMappings] =
+    iterators.segmentsFrom(extractTaxID _).apply(rows).map {
+      case (id, xs) =>
+        new RNAMappings(id, xs map idMappingRow)
+    }
+
   def parse(rows: BufferedIterator[Array[String]]): Array[RNAMappings] = {
 
     val acc: ObjectArrayList[RNAMappings]           = new ObjectArrayList

@@ -58,6 +58,12 @@ object read {
 
     new RNAMappings(x, y)
   }
+
+  final def rnaMappingsIterator(f: File): Iterator[RNAMappings] =
+    rnaMappingsIterator(new RStream(BRStream(f)))
+
+  final def rnaMappingsIterator(rs: RStream): Iterator[RNAMappings] =
+    Iterator.fill(rs.readInt) { rnaMappings(rs) }
 }
 
 object write {
