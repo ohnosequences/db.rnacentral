@@ -26,6 +26,12 @@ object RNAHeaders {
   def line2Header(ln: String): Header =
     new Header(extractTaxID(ln), extractText(ln))
 
+  def iterator(it: Iterator[String]): Iterator[RNAHeaders] =
+    iterators.segmentsFrom(extractRNAID).apply(it).map {
+      case (id, xs) =>
+        new RNAHeaders(id, xs map line2Header)
+    }
+
   @rec
   def accInto(id: RNAID,
               it: BufferedIterator[String],
