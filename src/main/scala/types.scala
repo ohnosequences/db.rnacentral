@@ -28,6 +28,67 @@ object types {
   type Index  = Int
   type rec    = annotation.tailrec
 
+  def RNAID2TaxIDs(
+      headers: Iterator[String]): Long2ObjectOpenHashMap[Array[Int]] = {
+
+    val map = new Long2ObjectOpenHashMap[IntArrayList](12000000, .75F)
+
+    headers.zipWithIndex foreach {
+      case (h, n) =>
+        val key   = extractRNAID(h)
+        val value = extractTaxID(h)
+
+        if (map.containsKey(key)) {
+          val v = map.get(key)
+          v add value
+        } else {
+          val v = new IntArrayList()
+          v add value
+          map.put(key, v)
+        }
+
+        if (n % 100000 == 0) {
+          println(s"${n} headers")
+        }
+    }
+
+    val res = new Long2ObjectOpenHashMap[Array[Int]](map.size, .75F)
+
+    map.long2ObjectEntrySet.fastForEach { e =>
+      val arrl = e.getValue
+      res.put(e.getLongKey, arrl.toArray(new Array[Int](arrl.size)))
+    }
+
+    res
+  }
+
+  // headers without the initial '>'
+  def buildFastaAnnotations(headers: Iterator[String])
+    : Long2ObjectOpenHashMap[ObjectArrayList[FastaAnnotation]] = {
+
+    val map = new Long2ObjectOpenHashMap[ObjectArrayList[FastaAnnotation]]
+
+    headers.zipWithIndex foreach {
+      case (h, n) =>
+        val key    = extractRNAID(h)
+        val fannot = new FastaAnnotation(extractTaxID(h), extractHeader(h))
+        if (map.containsKey(key)) {
+          val v = map.get(key)
+          v add fannot
+        } else {
+          val v = new ObjectArrayList[FastaAnnotation](1)
+          v add fannot
+          map.put(key, v)
+        }
+
+        if (n % 100000 == 0) {
+          println(s"${n} headers")
+        }
+    }
+
+    map
+  }
+
   final class FastaAnnotations(
       val xs: Array[FastaAnnotation],
       val starts: Array[Int],
@@ -403,40 +464,41 @@ case object RNAType {
   case object YRNA        extends RNAType("Y_RNA")
   case object miscRNA     extends RNAType("misc_RNA")
   case object other       extends RNAType("other")
+  case object none        extends RNAType("none") // missing from annotation
 
-  val from: String => Option[RNAType] =
-    _ match {
-      case rRNA.name  => Some(rRNA)
-      case tRNA.name  => Some(tRNA)
-      case ncRNA.name => Some(ncRNA)
-      case mRNA.name  => Some(mRNA)
+  def from(x: String): RNAType =
+    x match {
+      case rRNA.name  => rRNA
+      case tRNA.name  => tRNA
+      case ncRNA.name => ncRNA
+      case mRNA.name  => mRNA
       case autocataliticallySplicedIntron.name =>
-        Some(autocataliticallySplicedIntron)
-      case ribozyme.name                    => Some(ribozyme)
-      case hammerheadRibozyme.name          => Some(hammerheadRibozyme)
-      case lncRNA.name                      => Some(lncRNA)
-      case lncRNABidirectionalPromoter.name => Some(lncRNABidirectionalPromoter)
-      case RNasePRNA.name                   => Some(RNasePRNA)
-      case RNaseMRPRNA.name                 => Some(RNaseMRPRNA)
-      case guideRNA.name                    => Some(guideRNA)
-      case rasiRNA.name                     => Some(rasiRNA)
-      case scRNA.name                       => Some(scRNA)
-      case sRNA.name                        => Some(sRNA)
-      case siRNA.name                       => Some(siRNA)
-      case miRNA.name                       => Some(miRNA)
-      case piRNA.name                       => Some(piRNA)
-      case snoRNA.name                      => Some(snoRNA)
-      case snRNA.name                       => Some(snRNA)
-      case SRPRNA.name                      => Some(SRPRNA)
-      case YRNA.name                        => Some(YRNA)
-      case miscRNA.name                     => Some(miscRNA)
-      case tmRNA.name                       => Some(tmRNA)
-      case precursorRNA.name                => Some(precursorRNA)
-      case telomeraseRNA.name               => Some(telomeraseRNA)
-      case vaultRNA.name | "vaultRNA"       => Some(vaultRNA)
-      case antisenseRNA.name | "antisense"  => Some(antisenseRNA)
-      case other.name                       => Some(other)
-      case _                                => None
+        autocataliticallySplicedIntron
+      case ribozyme.name                    => ribozyme
+      case hammerheadRibozyme.name          => hammerheadRibozyme
+      case lncRNA.name                      => lncRNA
+      case lncRNABidirectionalPromoter.name => lncRNABidirectionalPromoter
+      case RNasePRNA.name                   => RNasePRNA
+      case RNaseMRPRNA.name                 => RNaseMRPRNA
+      case guideRNA.name                    => guideRNA
+      case rasiRNA.name                     => rasiRNA
+      case scRNA.name                       => scRNA
+      case sRNA.name                        => sRNA
+      case siRNA.name                       => siRNA
+      case miRNA.name                       => miRNA
+      case piRNA.name                       => piRNA
+      case snoRNA.name                      => snoRNA
+      case snRNA.name                       => snRNA
+      case SRPRNA.name                      => SRPRNA
+      case YRNA.name                        => YRNA
+      case miscRNA.name                     => miscRNA
+      case tmRNA.name                       => tmRNA
+      case precursorRNA.name                => precursorRNA
+      case telomeraseRNA.name               => telomeraseRNA
+      case vaultRNA.name | "vaultRNA"       => vaultRNA
+      case antisenseRNA.name | "antisense"  => antisenseRNA
+      case other.name                       => other
+      case _                                => none
     }
 }
 
@@ -471,36 +533,37 @@ case object Database {
   case object TAIR       extends Database("TAIR")
   case object tmRNA_Web  extends Database("TMRNA_WEB")
   case object WormBase   extends Database("WORMBASE")
+  case object Unknown    extends Database("unknown")
 
-  val from: String => Option[Database] =
-    _ match {
-      case dictyBase.name  => Some(dictyBase)
-      case ENA.name        => Some(ENA)
-      case Ensembl.name    => Some(Ensembl)
-      case FlyBase.name    => Some(FlyBase)
-      case GENCODE.name    => Some(GENCODE)
-      case GreenGenes.name => Some(GreenGenes)
-      case GtRNAdb.name    => Some(GtRNAdb)
-      case HGNC.name       => Some(HGNC)
-      case LNCipedia.name  => Some(LNCipedia)
-      case lncRNAdb.name   => Some(lncRNAdb)
-      case MGI.name        => Some(MGI)
-      case miRBase.name    => Some(miRBase)
-      case Modomics.name   => Some(Modomics)
-      case NONCODE.name    => Some(NONCODE)
-      case PDBe.name       => Some(PDBe)
-      case PomBase.name    => Some(PomBase)
-      case RGD.name        => Some(RGD)
-      case RDP.name        => Some(RDP)
-      case RefSeq.name     => Some(RefSeq)
-      case Rfam.name       => Some(Rfam)
-      case SGD.name        => Some(SGD)
-      case SILVA.name      => Some(SILVA)
-      case snOPY.name      => Some(snOPY)
-      case SRPDB.name      => Some(SRPDB)
-      case TAIR.name       => Some(TAIR)
-      case tmRNA_Web.name  => Some(tmRNA_Web)
-      case WormBase.name   => Some(WormBase)
-      case _               => None
+  def from(x: String): Database =
+    x match {
+      case dictyBase.name  => dictyBase
+      case ENA.name        => ENA
+      case Ensembl.name    => Ensembl
+      case FlyBase.name    => FlyBase
+      case GENCODE.name    => GENCODE
+      case GreenGenes.name => GreenGenes
+      case GtRNAdb.name    => GtRNAdb
+      case HGNC.name       => HGNC
+      case LNCipedia.name  => LNCipedia
+      case lncRNAdb.name   => lncRNAdb
+      case MGI.name        => MGI
+      case miRBase.name    => miRBase
+      case Modomics.name   => Modomics
+      case NONCODE.name    => NONCODE
+      case PDBe.name       => PDBe
+      case PomBase.name    => PomBase
+      case RGD.name        => RGD
+      case RDP.name        => RDP
+      case RefSeq.name     => RefSeq
+      case Rfam.name       => Rfam
+      case SGD.name        => SGD
+      case SILVA.name      => SILVA
+      case snOPY.name      => snOPY
+      case SRPDB.name      => SRPDB
+      case TAIR.name       => TAIR
+      case tmRNA_Web.name  => tmRNA_Web
+      case WormBase.name   => WormBase
+      case _               => Unknown
     }
 }

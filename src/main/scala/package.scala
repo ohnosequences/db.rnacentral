@@ -2,8 +2,10 @@ package ohnosequences.db
 
 package object rnacentral {
 
+  type rec     = annotation.tailrec
   type +[A, B] = Either[A, B]
-  type RNAID   = String
+  type RNAID   = Long
+  type TaxID   = Int
   type TaxonID = Int
 
   type RNAIDAndEntryAnnotation =

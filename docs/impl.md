@@ -2,11 +2,30 @@
 
 ## RNACentral FASTA files
 
-The species-specific file is *not* sorted (as one would expect). I need to read the file line by line, keep the header lines, and add that info to a `Map[RNAID, ArrayList[FastaInfo]]`. For the sequences we add them if missing to another map of type `Map[RNAID, DNA]`.
+The species-specific file is *not* sorted (as one would expect). I'm extracting the headers, sorting them, and storing them in binary format.
+
+### Headers
+
+They are already there for `10.0`: the file is `headers.sorted`.
+
+The binary representation is
+
+```
+[rnaid][header_size][taxid][text][taxid][text]...
+  8B      4B          4B     ?     4B     ?
+```
+
+Headers will be ~60 chars length so `~120B` each. Around `2GB` for the whole DB.
+
+### Sequences
+
+
+
+The sequences will be added later from the standard FASTA file.
 
 ## RNACentral tsv files
 
-Again, not sorted. How on earth this is even possible. Same as for FASTA then. Parse each row, add to a `Map[RNAID, ArrayList[Row]]`.
+Again, not sorted. How on earth this is even possible. Same as for FASTA then; sort it first.
 
 ## Memory Usage
 
