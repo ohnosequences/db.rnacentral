@@ -5,8 +5,55 @@ import ohnosequences.dna._
 
 final case class RNACentralData(
     val idMapping: File,
-    val speciesSpecificFasta: File
+    val speciesSpecificHeaders: File,
+    val activeFasta: File,
 )
+
+final case class BinaryRNACentralData(
+    val rnaHeaders: File,
+    val rnaMappings: File,
+    val rnaSequences: File
+)
+
+class RNACentralSubset(
+    val rnaHeaders: RNAID2Headers,
+    val rnaMappings: RNAID2Mappings,
+    val rnaSequences: RNAID2Sequence
+) {
+  
+  def only(xs: Array[RNAID]): RNACentralSubset = {
+
+    val len = xs.length
+    val h   = new RNAID2Headers(len)
+    val m   = new RNAID2Mappings(len)
+    val s   = new RNAID2Sequence(len)
+
+    xs foreach { id =>
+      h.put(id, rnaHeaders(id))
+      m.put(id, rnaMappings(id))
+      s.put(id, rnaSequences(id))
+    }
+
+    new RNACentralSubset(h, m, s)
+  }
+
+  def filterHeaders(p: Array[Header] => Boolean): RNACentralSubset =
+    // val ids = ???
+    // val len = ids.length
+
+    // val h = new RNAID2Headers(len)
+    // val m = new RNAID2Mappings(len)
+    // val s = new RNAID2Sequence(len)
+
+    // ids foreach { id =>
+    //   h.put(id, rnaHeaders(id))
+    //   m.put(id, rnaMappings(id))
+    //   s.put(id, rnaSequences(id))
+    // }
+
+    // RNACentralSubset(h,m,s)
+    ???
+}
 
 object TaxID {}
 
@@ -61,7 +108,7 @@ object types {
   }
 }
 
-sealed class RNAType(val name: String)
+sealed class RNAType(final val name: String)
 
 case object RNAType {
 

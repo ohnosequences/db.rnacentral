@@ -2,6 +2,7 @@ package ohnosequences.db.rnacentral
 
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import ohnosequences.s3.{S3Object, request}
+import ohnosequences.files.digest.DigestFunction
 import java.io.File
 
 /**
@@ -9,10 +10,11 @@ import java.io.File
   * built here, [[s3Helpers.s3Client]], and with a default part size,
   * [[s3Helpers.partSize5MiB]].
   */
-private[rnacentral] case object s3Helpers {
+object s3Helpers {
 
-  lazy val s3Client = AmazonS3ClientBuilder.standard().build()
-  val partSize5MiB  = 5 * 1024 * 1024
+  val hashingFunction: DigestFunction = DigestFunction.SHA512
+  lazy val s3Client                   = AmazonS3ClientBuilder.standard().build()
+  val partSize5MiB                    = 5 * 1024 * 1024
 
   def getFile(s3Obj: S3Object, file: File) =
     request.getFile(s3Client)(s3Obj, file).left.map(Error.S3Error)
@@ -22,9 +24,7 @@ private[rnacentral] case object s3Helpers {
 
   def paranoidPutFile(file: File, s3Obj: S3Object) =
     request
-      .paranoidPutFile(s3Client)(file, s3Obj, partSize5MiB)(
-        data.hashingFunction
-      )
+      .paranoidPutFile(s3Client)(file, s3Obj, partSize5MiB)(hashingFunction)
       .left
       .map(Error.S3Error)
 

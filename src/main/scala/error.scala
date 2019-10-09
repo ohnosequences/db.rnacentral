@@ -9,6 +9,15 @@ sealed abstract class Error {
 
 case object Error {
 
+  def failFast[X, Y](xs: Seq[X])(f: X => (Error + Y)): Error + Seq[Y] =
+    xs.foldLeft[Error + Seq[Y]](Right(Seq())) { (acc, x) =>
+      acc.right.flatMap { ys: Seq[Y] =>
+        f(x).right.map { y: Y =>
+          ys :+ y
+        }
+      }
+    }
+
   final case class FileError(val err: files.Error) extends Error {
     val msg = err.msg
   }

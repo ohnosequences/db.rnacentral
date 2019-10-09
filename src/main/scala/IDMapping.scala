@@ -1,77 +1,50 @@
 package ohnosequences.db.rnacentral
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList
-
-// 8B + 4B + 4B + 4B + 4B = 24B + header
-final class IDMappingRow(
+// the content of a row in `id_mappings.tsv`
+final class Mapping(
     final val db: Database,
     final val taxID: TaxID,
     final val rnaType: RNAType,
     final val geneName: String
-)
+) {
 
+  override def toString: String =
+    s"${db}, ${taxID}, ${rnaType}, ${geneName}"
+}
+
+// the mappings for rnaID
 final class RNAMappings(
     final val rnaID: RNAID,
-    final val mappings: Array[IDMappingRow]
-)
+    final val mappings: Array[Mapping]
+) {
+
+  override def toString: String =
+    s"${rnaID}:\n${mappings.mkString("\n")}\n"
+}
 
 object RNAMappings {
 
-  def extractRNAID(row: Array[String]): RNAID =
-    RNAID string2RNAID row(0)
+  /// group by RNAID, then parse rest
+  def from(data: RNACentralData): Iterator[RNAMappings] = {
 
-  def extractDatabase(row: Array[String]): Database =
-    Database from row(1)
+    val f = iterators.segmentsFrom(extractRNAID _)
+    f(IDMappings.rowsFrom(data.idMapping))
+      .map({ case (id, rows) => new RNAMappings(id, rows.map(mapping _)) })
+  }
 
-  def extractTaxID(row: Array[String]): TaxID =
-    row(3).toInt
+  // tsv parsing
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  def extractRNAID(row: Array[String]): RNAID       = RNAID string2RNAID row(0)
+  def extractDatabase(row: Array[String]): Database = Database from row(1)
+  def extractTaxID(row: Array[String]): TaxID       = row(3).toInt
+  def extractRNAType(row: Array[String]): RNAType   = RNAType from row(4)
+  def extractGeneName(row: Array[String]): String   = row(5)
 
-  def extractRNAType(row: Array[String]): RNAType =
-    RNAType from row(4)
-
-  def extractGeneName(row: Array[String]): String =
-    row(5)
-
-  def idMappingRow(row: Array[String]): IDMappingRow =
-    new IDMappingRow(
+  def mapping(row: Array[String]): Mapping =
+    new Mapping(
       extractDatabase(row),
       extractTaxID(row),
       extractRNAType(row),
       extractGeneName(row)
     )
-
-  @rec
-  def accInto(id: RNAID,
-              it: BufferedIterator[Array[String]],
-              xs: ObjectArrayList[IDMappingRow]): Array[IDMappingRow] =
-    if (it.hasNext && extractRNAID(it.head) == id) {
-      xs add idMappingRow(it.next)
-      accInto(id, it, xs)
-    } else xs.toArray(new Array[IDMappingRow](xs.size))
-
-  def iterator(rows: Iterator[Array[String]]): Iterator[RNAMappings] =
-    iterators.segmentsFrom(extractTaxID _).apply(rows).map {
-      case (id, xs) =>
-        new RNAMappings(id, xs map idMappingRow)
-    }
-
-  def parse(rows: BufferedIterator[Array[String]]): Array[RNAMappings] = {
-
-    val acc: ObjectArrayList[RNAMappings]           = new ObjectArrayList
-    val mappings_acc: ObjectArrayList[IDMappingRow] = new ObjectArrayList
-
-    @rec @inline
-    def rec(i: Int): Array[RNAMappings] =
-      if (rows.hasNext) {
-        val row = rows.head
-        val id  = extractRNAID(row)
-        val hs  = accInto(id, rows, mappings_acc)
-        mappings_acc.clear
-        acc add new RNAMappings(id, hs)
-        if (i % 10000 == 0) { println(s"processed ${i} ids") }
-        rec(i + 1)
-      } else acc.toArray(new Array[RNAMappings](acc.size))
-
-    rec(0)
-  }
 }

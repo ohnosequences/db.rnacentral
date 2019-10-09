@@ -1,5 +1,13 @@
 # Implementation Notes
 
+In short:
+
+1. Need id_mapping, species-specific fasta and active fasta
+2. sort id_mapping, extract and sort headers from species-specific fasta
+3. keep *only* the active ones: those in the id_mapping file
+3. Store all this in binary format
+4. add sequences from the active fasta
+
 ## RNACentral FASTA files
 
 The species-specific file is *not* sorted (as one would expect). I'm extracting the headers, sorting them, and storing them in binary format.
@@ -18,8 +26,6 @@ The binary representation is
 Headers will be ~60 chars length so `~120B` each. Around `2GB` for the whole DB.
 
 ### Sequences
-
-
 
 The sequences will be added later from the standard FASTA file.
 

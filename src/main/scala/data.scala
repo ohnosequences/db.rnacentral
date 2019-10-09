@@ -1,16 +1,8 @@
 package ohnosequences.db.rnacentral
 
 import ohnosequences.s3.{S3Object, s3AddressFromString}
-import ohnosequences.files.digest.DigestFunction
 import java.io.File
 
-/**
-  * Encapsulates all information attached to a specific version of the data
-  *
-  * @param name is the name of the version, that must match the name of an
-  * RNACentral release; i.e., the name of one of the directories in
-  * ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral/releases/
-  */
 sealed abstract class Version(val name: String) {
   override final def toString: String = name
 }
@@ -18,148 +10,111 @@ sealed abstract class Version(val name: String) {
 object Version {
 
   lazy val all: Set[Version] =
-    Set(_9_0, _10_0)
+    Set(_12)
+  // Set(_9_0, _10_0)
 
-  /**
-    * RNACentral release 9.
-    * See http://blog.rnacentral.org/2018/04/rnacentral-release-9.html
-    */
-  case object _9_0 extends Version("9.0")
+  type _12 = _12.type
+  case object _12 extends Version("12")
+
   type _9_0 = _9_0.type
-
-  /**
-    * RNACentral release 10.
-    * http://blog.rnacentral.org/2018/08/rnacentral-release-10.html
-    */
-  case object _10_0 extends Version("10.0")
+  case object _9_0 extends Version("9.0")
   type _10_0 = _10_0.type
+  case object _10_0 extends Version("10.0")
 }
 
-case object data {
+sealed abstract class Data[V <: Version] {
 
-  /**
-    * Values and methods to retrieve the input files from RNACentral FTP
-    */
+  def version: V
+  def name: String
+  override final def toString = version.toString / name
+}
+
+object Data {
+
+  case class IDMapping[V <: Version](val version: V) extends Data[V] {
+    val name = "id_mapping".tsv
+  }
+  case class SpeciesSpecificSequences[V <: Version](val version: V)
+      extends Data[V] {
+    val name = "rnacentral_species_specific_ids".fasta
+  }
+  case class ActiveSequences[V <: Version](val version: V) extends Data[V] {
+    val name = "rnacentral_active"
+  }
+
+  case class GZip[V <: Version](val d: Data[V]) extends Data[V] {
+    val version = d.version
+    val name    = d.name.gz
+  }
+
+  def everythingGZ[V <: Version](version: V): Seq[Data[V]] =
+    everything(version) map { v =>
+      GZip(v)
+    }
+
+  def everything[V <: Version](version: V): Seq[Data[V]] =
+    Seq(
+      IDMapping(version),
+      SpeciesSpecificSequences(version),
+      ActiveSequences(version)
+    )
+
   case object input {
 
-    final val baseURL: String =
-      "ftp://ftp.ebi.ac.uk/pub/databases/RNAcentral"
+    val base: URL =
+      new URL("ftp", "ftp.ebi.ac.uk/", "pub/databases/RNAcentral")
 
-    def releaseURL(version: Version): String =
-      s"${baseURL}/releases/${version}"
+    def release[V <: Version](v: V): URL =
+      base / "releases" / v.toString
 
-    /**
-      * Name of the id mapping file
-      */
-    val idMappingTSV: String = "id_mapping.tsv"
+    def url[V <: Version](x: Data[V]): URL =
+      x match {
+        case GZip(x) =>
+          x match {
+            case SpeciesSpecificSequences(_) | ActiveSequences(_) =>
+              release(x.version) / "sequences" / x.name
+            case IDMapping(_) =>
+              release(x.version) / "id_mapping" / x.name
+          }
+        case _ => throw new IllegalArgumentException
+      }
 
-    /**
-      * Name of the gzipped id mapping file
-      */
-    val idMappingTSVGZ: String = s"${idMappingTSV}.gz"
+    def urlToS3[V <: Version](x: Data[V]): (URL, S3Object) =
+      url(x) -> s3.s3Object(x)
 
-    /**
-      * FTP path of the gzipped id mapping file from RNACentral version `version`
-      */
-    def idMappingTSVGZURL(version: Version): String =
-      s"${releaseURL(version)}/id_mapping/${idMappingTSVGZ}"
-
-    /**
-      * Name of the fasta file
-      */
-    val speciesSpecificFASTA: String = "rnacentral_species_specific_ids.fasta"
-
-    /**
-      * Name of the gzipped fasta file
-      */
-    val speciesSpecificFASTAGZ: String = s"${speciesSpecificFASTA}.gz"
-
-    /**
-      * FTP path of the gzipped fasta file from RNACentral version `version`
-      */
-    def speciesSpecificFASTAGZURL(version: Version): String =
-      s"${releaseURL(version)}/sequences/${speciesSpecificFASTAGZ}"
+    def all[V <: Version](v: V): Seq[Data[V]] =
+      everythingGZ(v)
   }
 
-  case object local {
+  case object s3 {
 
-    /**
-      * Local file used when downloading the id mapping file from RNACentral FTP
-      *
-      * @param localFolder is the directory where the file will be created
-      */
-    def idMappingFile(localFolder: File): File =
-      new File(localFolder, input.idMappingTSV)
-
-    /**
-      * Local file used when downloading the gzipped id mapping from RNACentral
-      * FTP
-      *
-      * @param localFolder is the directory where the file will be created
-      */
-    def idMappingGZFile(localFolder: File): File =
-      new File(localFolder, input.idMappingTSVGZ)
-
-    /**
-      * Local file used when downloading the fasta file from RNACentral FTP
-      *
-      * @param localFolder is the directory where the file will be created
-      */
-    def fastaFile(localFolder: File): File =
-      new File(localFolder, input.speciesSpecificFASTA)
-
-    /**
-      * Local file used when downloading the gzipped fasta file from RNACentral
-      * FTP
-      *
-      * @param localFolder is the directory where the file will be created
-      */
-    def fastaGZFile(localFolder: File): File =
-      new File(localFolder, input.speciesSpecificFASTAGZ)
-  }
-
-  /**
-    * Generator of S3 objects in a directory parametrized by a version.
-    *
-    * @param version is the version of the db.rnacentral data whose paths we
-    * want to obtain.
-    *
-    * @return a function `String => S3Object` that, given the name of a file,
-    * return an S3 object in a fixed S3 directory, which is parametrized by the
-    * version passed.
-    */
-  def prefix(version: Version): String => S3Object =
-    file =>
+    def prefix[V <: Version](v: V): S3Object =
       s3"resources.ohnosequences.com" /
         "ohnosequences" /
         "db" /
         "rnacentral" /
         "unstable" /
-        version.toString /
-      file
+        v.toString
 
-  /**
-    * Return the path of the S3 object containing the mirrored id mapping for
-    * the version passed
-    */
-  def idMappingTSV(version: Version): S3Object =
-    prefix(version)(input.idMappingTSV)
+    def s3Object[V <: Version](x: Data[V]): S3Object =
+      prefix(x.version) / x.name
+  }
 
-  /**
-    * Return the path of the S3 object containing the mirrored fasta for the
-    * version passed.
-    */
-  def speciesSpecificFASTA(version: Version): S3Object =
-    prefix(version)(input.speciesSpecificFASTA)
+  case class Local(val folder: File) {
 
-  /**
-    * A set of all the S3 objects generated in the version passed
-    */
-  def everything(version: Version): Set[S3Object] =
-    Set(idMappingTSV(version), speciesSpecificFASTA(version))
+    def prefix[V <: Version](v: V): File =
+      new File(folder, s"${v}/")
 
-  /**
-    * The function used to hash the content of the files that are uploaded to S3
-    */
-  val hashingFunction: DigestFunction = DigestFunction.SHA512
+    def file[V <: Version](x: Data[V]): File =
+      new File(prefix(x.version), x.name)
+
+    def localToS3[V <: Version](x: Data[V]): (File, S3Object) =
+      file(x) -> s3.s3Object(x)
+
+    def s3ToLocal[V <: Version](x: Data[V]): (S3Object, File) =
+      localToS3(x).swap
+
+    def inputToLocal[V <: Version](x: Data[V]): (URL, File) =
+      input.url(x) -> file(x)
+  }
 }
