@@ -1,0 +1,4 @@
+#!/bin/sh
+fasta=$1
+headers="${1}.headers"
+grep '^>' ${fasta} | cut -c 2- | sort > ${headers}
